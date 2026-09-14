@@ -1,49 +1,47 @@
 // Tipos compartilhados entre extração (IA), UI e geração de saída (WhatsApp/PDF)
 
-export type Baggage = "sem" | "com";
+/** Um trecho de voo (ida OU volta). */
+export interface FlightLeg {
+  airline: string;
+  flightNumber: string;
+  date: string; // como aparece no print, ex: "18 Set" ou "25/09/26"
+  departureTime: string;
+  arrivalTime: string;
+  duration: string;
+  origin: string;
+  destination: string;
+  stops: number;
+  aircraft: string;
+}
 
-/** Uma tarifa (linha de preço) dentro de uma opção de voo — cada voo tem
- * normalmente 2: "sem bagagem" e "com bagagem". */
+/** Uma tarifa (linha de preço) dentro de uma opção de voo — cobre o(s)
+ * trecho(s) inteiro(s) da linha (só ida, ou ida+volta combinados). */
 export interface FareOption {
   id: string;
-  baggage: Baggage;
-  fareLabel: string; // ex: "LIG", "AZU", "CLA", "STA"
-  fareClass: string; // ex: "OW" (one way), letra da classe (E, H, P, M...)
-  price: number; // valor numérico em reais
+  baggage: string; // já formatado pra exibição, ex: "Sem bagagem despachada", "Até 12kg"
+  fareLabel: string; // ex: "LIG", "AZU", "CLA", "STA", "Econômica"
+  fareClass: string; // ex: "OW", letra da classe (E, H, P, M...), ou ""
+  price: number; // valor TOTAL da combinação (ida, ou ida+volta) em reais
   currency: string; // "BRL"
 }
 
-/** Uma linha extraída da tabela de voos (uma linha do print). */
+/** Uma linha extraída do print — um trecho de ida e, se o print for de
+ * pacote ida+volta, também o trecho de volta combinado com ele. */
 export interface FlightRow {
   id: string;
-  airline: string;
-  flightNumber: string;
-  date: string; // como aparece no print, ex: "18 Set"
-  departureTime: string;
-  arrivalTime: string;
-  duration: string;
-  origin: string;
-  destination: string;
-  stops: number;
-  aircraft: string;
+  ida: FlightLeg;
+  volta?: FlightLeg;
   fares: FareOption[];
 }
 
-/** Um item selecionável na UI: uma linha de voo + uma tarifa específica. */
+/** Um item selecionável na UI: uma linha de voo (ida[+volta]) + uma tarifa
+ * específica dessa linha. */
 export interface QuoteItem {
   rowId: string;
   fareId: string;
-  airline: string;
-  flightNumber: string;
-  date: string;
-  departureTime: string;
-  arrivalTime: string;
-  duration: string;
-  origin: string;
-  destination: string;
-  stops: number;
-  aircraft: string;
-  baggage: Baggage;
+  ida: FlightLeg;
+  volta?: FlightLeg;
+  baggage: string;
   fareLabel: string;
   fareClass: string;
   price: number;
@@ -86,16 +84,8 @@ export function flightRowsToQuoteItems(rows: FlightRow[]): QuoteItem[] {
       items.push({
         rowId: row.id,
         fareId: fare.id,
-        airline: row.airline,
-        flightNumber: row.flightNumber,
-        date: row.date,
-        departureTime: row.departureTime,
-        arrivalTime: row.arrivalTime,
-        duration: row.duration,
-        origin: row.origin,
-        destination: row.destination,
-        stops: row.stops,
-        aircraft: row.aircraft,
+        ida: row.ida,
+        volta: row.volta,
         baggage: fare.baggage,
         fareLabel: fare.fareLabel,
         fareClass: fare.fareClass,

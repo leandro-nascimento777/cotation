@@ -12,15 +12,26 @@ const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const EXTRACTION_PROMPT = `Você é um extrator de dados especializado em telas de sistemas de emissão de \
 passagens aéreas usadas por agências de viagem no Brasil.
 
-A imagem em anexo é um print de uma tabela comparativa de voos (colunas comuns: Cia, Voo, Saída, \
-Chegada, Dur. Total., Origem, Destino, Dur. Con., Esc., Equip., Tipo, e duas seções de preço lado a \
-lado — "Sem Bagagem" e "Com Bagagem" — cada uma com uma tag de tarifa (ex: LIG, AZU, CLA, STA) e um \
-valor em reais).
+A imagem em anexo pode vir em UM destes dois formatos — identifique qual é antes de extrair:
 
-Extraia CADA LINHA da tabela como um item em "rows", com máxima fidelidade ao que está escrito — \
-não traduza, não arredonde, não invente valores nem preencha campos que não conseguir ler. Se uma \
-linha tiver as duas colunas de preço (sem e com bagagem), gere duas entradas em "fares" para essa \
-linha. Converta valores como "R$ 1.917,15" para o número 1917.15.`;
+FORMATO 1 — Tabela plana de voos de ida (colunas comuns: Cia, Voo, Saída, Chegada, Dur. Total., \
+Origem, Destino, Dur. Con., Esc., Equip., Tipo, e duas seções de preço lado a lado — "Sem Bagagem" e \
+"Com Bagagem" — cada uma com uma tag de tarifa, ex: LIG, AZU, CLA, STA, e um valor em reais). Extraia \
+CADA LINHA da tabela como um item em "rows", preenchendo só "ida" (deixe "volta" ausente). Se a linha \
+tiver as duas colunas de preço (sem e com bagagem), gere duas entradas em "fares" para essa linha.
+
+FORMATO 2 — Cards de pacote ida e volta: cada card tem uma seção "Ida" (data + lista de opções de \
+voo com rádio/checkbox, uma delas marcada/selecionada) e uma seção "Volta" (mesma estrutura), mais um \
+painel de preço com o valor total daquele card (ex: "Valor total R$ 922,06"), tags de bagagem (ex: \
+"Até 12kg") e classe (ex: "Econômica"). Para CADA CARD, gere UMA entrada em "rows" com "ida" = a opção \
+de voo marcada/selecionada na seção Ida, "volta" = a opção marcada/selecionada na seção Volta, e UMA \
+entrada em "fares" com o preço TOTAL do painel daquele card (prefira "Valor total" se houver também um \
+preço promocional de forma de pagamento, ex: "No Pix"). NÃO gere combinações hipotéticas com as outras \
+opções de rádio não selecionadas — elas não têm preço próprio visível.
+
+Em ambos os formatos: máxima fidelidade ao que está escrito — não traduza, não arredonde, não invente \
+valores nem preencha campos que não conseguir ler (use "" para texto ou 0 para número quando não \
+houver o dado). Converta valores como "R$ 1.917,15" para o número 1917.15.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -56,16 +67,8 @@ export async function POST(req: NextRequest) {
 
     const rows: FlightRow[] = result.object.rows.map((row, rIdx) => ({
       id: `row-${rIdx}`,
-      airline: row.airline,
-      flightNumber: row.flightNumber,
-      date: row.date,
-      departureTime: row.departureTime,
-      arrivalTime: row.arrivalTime,
-      duration: row.duration,
-      origin: row.origin,
-      destination: row.destination,
-      stops: row.stops,
-      aircraft: row.aircraft,
+      ida: row.ida,
+      volta: row.volta,
       fares: row.fares.map((fare, fIdx) => ({
         id: `row-${rIdx}-fare-${fIdx}`,
         baggage: fare.baggage,

@@ -32,6 +32,25 @@
   padding: 8px 10px;
 }
 
+.voo-leg-label {
+  margin: 0 0 3px 0;
+  font-size: 8px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--cor-primaria);
+}
+
+.voo-leg-divisor {
+  height: 1px;
+  background: var(--cor-borda);
+  margin: 8px 0;
+}
+
+.voo-meta-final {
+  margin-top: 6px;
+}
+
 .voo-rota {
   display: flex;
   align-items: center;

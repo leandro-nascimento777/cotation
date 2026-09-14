@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { AgencyInfo, QuoteItem } from "@/lib/types";
+import { AgencyInfo, FlightLeg, QuoteItem } from "@/lib/types";
 import { buildWhatsAppText } from "@/lib/whatsapp";
-import { baggageLabel, formatCurrencyBRL, validityDatePtBR } from "@/lib/format";
+import { formatCurrencyBRL, validityDatePtBR } from "@/lib/format";
 import { Check, Copy, Download, FileText, MessageCircle } from "lucide-react";
 
 interface PreviewPanelProps {
@@ -86,6 +86,29 @@ export function PreviewPanel({ items, agency, onDownloadPdf, pdfLoading, pdfErro
   );
 }
 
+function LegRow({ leg, label }: { leg: FlightLeg; label?: string }) {
+  return (
+    <div>
+      {label ? <p className="mb-0.5 text-[7px] font-bold uppercase tracking-wide text-slate-400">{label}</p> : null}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[11px] font-bold">{leg.origin}</p>
+          <p className="text-[9px] text-slate-500">Partida {leg.departureTime}</p>
+        </div>
+        <span className="text-slate-300">──────▶</span>
+        <div className="text-right">
+          <p className="text-[11px] font-bold">{leg.destination}</p>
+          <p className="text-[9px] text-slate-500">Chegada {leg.arrivalTime}</p>
+        </div>
+      </div>
+      <div className="mt-0.5 flex flex-wrap gap-x-3 text-[8px] text-slate-500">
+        <span>Duração: <b className="text-slate-700">{leg.duration}</b></span>
+        <span>Conexões: <b className="text-slate-700">{leg.stops === 0 ? "Voo direto" : leg.stops}</b></span>
+      </div>
+    </div>
+  );
+}
+
 /** Renderiza um preview visual aproximado (HTML) do PDF — o layout real e
  * definitivo é gerado pelo template Jinja2 + WeasyPrint em pdf-template/
  * (ver src/lib/pdf/buildFlightQuoteData.ts e /api/pdf). As cores aqui
@@ -135,26 +158,20 @@ function PdfMockPreview({ items, agency }: { items: QuoteItem[]; agency: AgencyI
             <div key={`${item.rowId}-${item.fareId}`} className="mb-2 overflow-hidden rounded border border-slate-200">
               <div className="flex items-center justify-between bg-[#1b4f8c] px-2 py-1 text-white">
                 <span className="text-[9px] font-bold">
-                  Opção {idx + 1} · {item.airline} {item.flightNumber} · {item.date}
+                  Opção {idx + 1}
+                  {item.volta ? " · Ida e volta" : ""} · {item.ida.airline} {item.ida.flightNumber} · {item.ida.date}
                 </span>
                 <span className="text-[10px] font-bold">{formatCurrencyBRL(item.price)}</span>
               </div>
               <div className="px-2 py-1.5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[11px] font-bold">{item.origin}</p>
-                    <p className="text-[9px] text-slate-500">Partida {item.departureTime}</p>
+                <LegRow leg={item.ida} label={item.volta ? "IDA" : undefined} />
+                {item.volta ? (
+                  <div className="mt-1 border-t border-slate-100 pt-1">
+                    <LegRow leg={item.volta} label="VOLTA" />
                   </div>
-                  <span className="text-slate-300">──────▶</span>
-                  <div className="text-right">
-                    <p className="text-[11px] font-bold">{item.destination}</p>
-                    <p className="text-[9px] text-slate-500">Chegada {item.arrivalTime}</p>
-                  </div>
-                </div>
+                ) : null}
                 <div className="mt-1 flex flex-wrap gap-x-3 border-t border-slate-100 pt-1 text-[8px] text-slate-500">
-                  <span>Duração: <b className="text-slate-700">{item.duration}</b></span>
-                  <span>Conexões: <b className="text-slate-700">{item.stops === 0 ? "Voo direto" : item.stops}</b></span>
-                  <span>Bagagem: <b className="text-slate-700">{baggageLabel(item.baggage)} ({item.fareLabel})</b></span>
+                  <span>Bagagem: <b className="text-slate-700">{item.baggage} ({item.fareLabel})</b></span>
                 </div>
               </div>
             </div>

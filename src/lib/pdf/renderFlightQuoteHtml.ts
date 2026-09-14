@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { FlightQuoteTemplateData } from "./buildFlightQuoteData";
 
+type TemplateLeg = FlightQuoteTemplateData["opcoes"][number]["ida"];
+
 // Reaproveita as MESMAS folhas de estilo do template Jinja2/WeasyPrint em
 // pdf-template/ (style.css + flight-quote.css) — uma única fonte de verdade
 // de design para os dois pipelines de geração de PDF (Python standalone e
@@ -99,39 +101,54 @@ function renderLinhaData(data: FlightQuoteTemplateData): string {
 
 const AVIAO_SVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2.5 1.8V22l3.5-1 3.5 1v-1.2L12 19v-5.5l9 2.5z"/></svg>`;
 
+function renderLeg(leg: TemplateLeg, label?: string): string {
+  return `
+        <div class="voo-leg">
+          ${label ? `<p class="voo-leg-label">${escapeHtml(label)}</p>` : ""}
+          <div class="voo-rota">
+            <div class="voo-rota-origem">
+              <p class="voo-aeroporto">${escapeHtml(leg.origem)}</p>
+              <p class="voo-horario">Partida ${escapeHtml(leg.hora_partida)}</p>
+            </div>
+            <span class="voo-seta">&#9644;&#9644;&#9644;&#9644;&#9654;</span>
+            <div class="voo-rota-destino">
+              <p class="voo-aeroporto">${escapeHtml(leg.destino)}</p>
+              <p class="voo-horario">Chegada ${escapeHtml(leg.hora_chegada)}</p>
+            </div>
+          </div>
+          <div class="voo-meta">
+            <span>${escapeHtml(leg.cia_aerea)} ${escapeHtml(leg.numero_voo)} · ${escapeHtml(leg.data)}</span>
+            <span>Duração: <strong>${escapeHtml(leg.duracao)}</strong></span>
+            <span>Conexões: <strong>${escapeHtml(leg.conexoes)}</strong></span>
+            ${leg.equipamento ? `<span>Equip.: <strong>${escapeHtml(leg.equipamento)}</strong></span>` : ""}
+          </div>
+        </div>`;
+}
+
 function renderOpcoes(data: FlightQuoteTemplateData): string {
   if (!data.opcoes.length) {
     return `<p style="font-size: 10px; color: var(--cor-texto-suave);">Nenhuma opção selecionada.</p>`;
   }
   return data.opcoes
-    .map(
-      (o, idx) => `
+    .map((o, idx) => {
+      const titulo = o.volta
+        ? `Opção ${idx + 1} · Ida e volta · ${escapeHtml(o.ida.cia_aerea)}`
+        : `Opção ${idx + 1} · ${escapeHtml(o.ida.cia_aerea)} ${escapeHtml(o.ida.numero_voo)} · ${escapeHtml(o.ida.data)}`;
+      return `
     <div class="voo-card">
       <div class="voo-card-header">
-        <span>Opção ${idx + 1} · ${escapeHtml(o.cia_aerea)} ${escapeHtml(o.numero_voo)} · ${escapeHtml(o.data)}</span>
+        <span>${titulo}</span>
         <span class="voo-card-preco">${escapeHtml(o.valor)}</span>
       </div>
       <div class="voo-card-body">
-        <div class="voo-rota">
-          <div class="voo-rota-origem">
-            <p class="voo-aeroporto">${escapeHtml(o.origem)}</p>
-            <p class="voo-horario">Partida ${escapeHtml(o.hora_partida)}</p>
-          </div>
-          <span class="voo-seta">&#9644;&#9644;&#9644;&#9644;&#9654;</span>
-          <div class="voo-rota-destino">
-            <p class="voo-aeroporto">${escapeHtml(o.destino)}</p>
-            <p class="voo-horario">Chegada ${escapeHtml(o.hora_chegada)}</p>
-          </div>
-        </div>
-        <div class="voo-meta">
-          <span>Duração: <strong>${escapeHtml(o.duracao)}</strong></span>
-          <span>Conexões: <strong>${escapeHtml(o.conexoes)}</strong></span>
-          ${o.equipamento ? `<span>Equip.: <strong>${escapeHtml(o.equipamento)}</strong></span>` : ""}
+        ${renderLeg(o.ida, o.volta ? "Ida" : undefined)}
+        ${o.volta ? `<div class="voo-leg-divisor"></div>${renderLeg(o.volta, "Volta")}` : ""}
+        <div class="voo-meta voo-meta-final">
           <span>Bagagem: <strong>${escapeHtml(o.bagagem_label)} (${escapeHtml(o.tarifa_label)})</strong></span>
         </div>
       </div>
-    </div>`
-    )
+    </div>`;
+    })
     .join("");
 }
 

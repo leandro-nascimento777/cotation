@@ -6,10 +6,6 @@ export function formatCurrencyBRL(value: number): string {
   });
 }
 
-export function baggageLabel(baggage: "sem" | "com"): string {
-  return baggage === "com" ? "Com bagagem despachada" : "Sem bagagem despachada";
-}
-
 export function quoteNumber(date = new Date()): string {
   const y = date.getFullYear();
   const stamp = date.getTime().toString().slice(-6);

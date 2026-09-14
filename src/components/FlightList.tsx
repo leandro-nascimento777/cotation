@@ -1,12 +1,32 @@
 "use client";
 
-import { QuoteItem } from "@/lib/types";
-import { baggageLabel, formatCurrencyBRL } from "@/lib/format";
-import { Luggage, PlaneTakeoff } from "lucide-react";
+import { FlightLeg, QuoteItem } from "@/lib/types";
+import { formatCurrencyBRL } from "@/lib/format";
+import { Luggage, PlaneLanding, PlaneTakeoff } from "lucide-react";
 
 interface FlightListProps {
   items: QuoteItem[];
   onToggle: (rowId: string, fareId: string) => void;
+}
+
+function LegLine({ leg, icon: Icon }: { leg: FlightLeg; icon: typeof PlaneTakeoff }) {
+  return (
+    <div className="flex items-center gap-2 text-xs text-slate-500">
+      <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+      <span className="font-medium text-slate-700">
+        {leg.airline} {leg.flightNumber}
+      </span>
+      <span>· {leg.date}</span>
+      <span>
+        · {leg.origin} → {leg.destination}
+      </span>
+      <span>
+        · {leg.departureTime}–{leg.arrivalTime}
+      </span>
+      <span>· {leg.duration}</span>
+      <span>· {leg.stops === 0 ? "direto" : `${leg.stops} conexão(ões)`}</span>
+    </div>
+  );
 }
 
 export function FlightList({ items, onToggle }: FlightListProps) {
@@ -25,16 +45,16 @@ export function FlightList({ items, onToggle }: FlightListProps) {
         const base = fares[0];
         return (
           <div key={rowId} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                <PlaneTakeoff className="h-4 w-4 text-teal-600" />
-                {base.airline} {base.flightNumber} · {base.date}
+            <div className="mb-3 flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                {base.volta ? (
+                  <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-700">
+                    Ida e volta
+                  </span>
+                ) : null}
               </div>
-              <div className="text-xs text-slate-500">
-                {base.origin} → {base.destination} · {base.departureTime}–{base.arrivalTime} ·{" "}
-                {base.duration} ·{" "}
-                {base.stops === 0 ? "direto" : `${base.stops} conexão(ões)`}
-              </div>
+              <LegLine leg={base.ida} icon={PlaneTakeoff} />
+              {base.volta ? <LegLine leg={base.volta} icon={PlaneLanding} /> : null}
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               {fares.map((fare) => (
@@ -55,7 +75,7 @@ export function FlightList({ items, onToggle }: FlightListProps) {
                     />
                     <span className="flex items-center gap-1 text-slate-700">
                       <Luggage className="h-3.5 w-3.5 text-slate-400" />
-                      {baggageLabel(fare.baggage)}
+                      {fare.baggage}
                       <span className="text-xs text-slate-400">({fare.fareLabel})</span>
                     </span>
                   </div>

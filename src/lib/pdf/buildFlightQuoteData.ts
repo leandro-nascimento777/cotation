@@ -1,5 +1,18 @@
-import { AgencyInfo, QuoteItem } from "../types";
-import { baggageLabel, formatCurrencyBRL, formatDatePtBR, quoteNumber, validityDatePtBR } from "../format";
+import { AgencyInfo, FlightLeg, QuoteItem } from "../types";
+import { formatCurrencyBRL, formatDatePtBR, quoteNumber, validityDatePtBR } from "../format";
+
+interface TemplateLeg {
+  cia_aerea: string;
+  numero_voo: string;
+  data: string;
+  origem: string;
+  destino: string;
+  hora_partida: string;
+  hora_chegada: string;
+  duracao: string;
+  conexoes: string;
+  equipamento: string;
+}
 
 /** Formato esperado pelo template Jinja2 `flight-quote.html`
  * (ver pdf-template/flight-quote.html e pdf-template/README.md). */
@@ -21,16 +34,8 @@ export interface FlightQuoteTemplateData {
   data_validade: string;
   empresa_nome_banner: string;
   opcoes: Array<{
-    cia_aerea: string;
-    numero_voo: string;
-    data: string;
-    origem: string;
-    destino: string;
-    hora_partida: string;
-    hora_chegada: string;
-    duracao: string;
-    conexoes: string;
-    equipamento: string;
+    ida: TemplateLeg;
+    volta?: TemplateLeg;
     bagagem_label: string;
     tarifa_label: string;
     valor: string;
@@ -51,6 +56,21 @@ export interface BuildFlightQuoteDataOptions {
   corPrimaria?: string;
   corSecundaria?: string;
   corTexto?: string;
+}
+
+function legToTemplate(leg: FlightLeg): TemplateLeg {
+  return {
+    cia_aerea: leg.airline,
+    numero_voo: leg.flightNumber,
+    data: leg.date,
+    origem: leg.origin,
+    destino: leg.destination,
+    hora_partida: leg.departureTime,
+    hora_chegada: leg.arrivalTime,
+    duracao: leg.duration,
+    conexoes: leg.stops === 0 ? "Voo direto" : `${leg.stops} conexão(ões)`,
+    equipamento: leg.aircraft,
+  };
 }
 
 /** Converte os itens selecionados pelo agente + os dados da agência no
@@ -85,17 +105,9 @@ export function buildFlightQuoteData(
     cor_secundaria: options.corSecundaria || "",
     cor_texto: options.corTexto || "",
     opcoes: selected.map((item) => ({
-      cia_aerea: item.airline,
-      numero_voo: item.flightNumber,
-      data: item.date,
-      origem: item.origin,
-      destino: item.destination,
-      hora_partida: item.departureTime,
-      hora_chegada: item.arrivalTime,
-      duracao: item.duration,
-      conexoes: item.stops === 0 ? "Voo direto" : `${item.stops} conexão(ões)`,
-      equipamento: item.aircraft,
-      bagagem_label: baggageLabel(item.baggage),
+      ida: legToTemplate(item.ida),
+      volta: item.volta ? legToTemplate(item.volta) : undefined,
+      bagagem_label: item.baggage,
       tarifa_label: item.fareLabel,
       valor: formatCurrencyBRL(item.price),
     })),

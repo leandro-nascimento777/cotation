@@ -1,3 +1,4 @@
+{% from "partials/voo_leg.html" import voo_leg %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -39,25 +40,20 @@
     {% for opcao in opcoes %}
     <div class="voo-card">
       <div class="voo-card-header">
-        <span>Opção {{ loop.index }} · {{ opcao.cia_aerea }} {{ opcao.numero_voo }} · {{ opcao.data }}</span>
+        {% if opcao.volta %}
+        <span>Opção {{ loop.index }} · Ida e volta · {{ opcao.ida.cia_aerea }}</span>
+        {% else %}
+        <span>Opção {{ loop.index }} · {{ opcao.ida.cia_aerea }} {{ opcao.ida.numero_voo }} · {{ opcao.ida.data }}</span>
+        {% endif %}
         <span class="voo-card-preco">{{ opcao.valor }}</span>
       </div>
       <div class="voo-card-body">
-        <div class="voo-rota">
-          <div class="voo-rota-origem">
-            <p class="voo-aeroporto">{{ opcao.origem }}</p>
-            <p class="voo-horario">Partida {{ opcao.hora_partida }}</p>
-          </div>
-          <span class="voo-seta">&#9644;&#9644;&#9644;&#9644;&#9654;</span>
-          <div class="voo-rota-destino">
-            <p class="voo-aeroporto">{{ opcao.destino }}</p>
-            <p class="voo-horario">Chegada {{ opcao.hora_chegada }}</p>
-          </div>
-        </div>
-        <div class="voo-meta">
-          <span>Duração: <strong>{{ opcao.duracao }}</strong></span>
-          <span>Conexões: <strong>{{ opcao.conexoes }}</strong></span>
-          {% if opcao.equipamento %}<span>Equip.: <strong>{{ opcao.equipamento }}</strong></span>{% endif %}
+        {{ voo_leg(opcao.ida, "Ida" if opcao.volta else None) }}
+        {% if opcao.volta %}
+        <div class="voo-leg-divisor"></div>
+        {{ voo_leg(opcao.volta, "Volta") }}
+        {% endif %}
+        <div class="voo-meta voo-meta-final">
           <span>Bagagem: <strong>{{ opcao.bagagem_label }} ({{ opcao.tarifa_label }})</strong></span>
         </div>
       </div>

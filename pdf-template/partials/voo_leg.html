@@ -1,0 +1,24 @@
+{# Macro reaproveitada para renderizar um trecho de voo (ida OU volta) dentro
+   de um card de opção — ver flight-quote.html. #}
+{% macro voo_leg(leg, label=None) %}
+<div class="voo-leg">
+  {% if label %}<p class="voo-leg-label">{{ label }}</p>{% endif %}
+  <div class="voo-rota">
+    <div class="voo-rota-origem">
+      <p class="voo-aeroporto">{{ leg.origem }}</p>
+      <p class="voo-horario">Partida {{ leg.hora_partida }}</p>
+    </div>
+    <span class="voo-seta">&#9644;&#9644;&#9644;&#9644;&#9654;</span>
+    <div class="voo-rota-destino">
+      <p class="voo-aeroporto">{{ leg.destino }}</p>
+      <p class="voo-horario">Chegada {{ leg.hora_chegada }}</p>
+    </div>
+  </div>
+  <div class="voo-meta">
+    <span>{{ leg.cia_aerea }} {{ leg.numero_voo }} · {{ leg.data }}</span>
+    <span>Duração: <strong>{{ leg.duracao }}</strong></span>
+    <span>Conexões: <strong>{{ leg.conexoes }}</strong></span>
+    {% if leg.equipamento %}<span>Equip.: <strong>{{ leg.equipamento }}</strong></span>{% endif %}
+  </div>
+</div>
+{% endmacro %}

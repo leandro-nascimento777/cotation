@@ -1,5 +1,5 @@
 import { AgencyInfo, QuoteItem } from "./types";
-import { baggageLabel, formatCurrencyBRL, validityDatePtBR } from "./format";
+import { formatCurrencyBRL, validityDatePtBR } from "./format";
 
 /** Gera o texto formatado (Markdown do WhatsApp: *negrito*, _itálico_) a
  * partir dos itens selecionados e dos dados da agência. */
@@ -22,12 +22,22 @@ export function buildWhatsAppText(items: QuoteItem[], agency: AgencyInfo): strin
 
   selected.forEach((item, idx) => {
     lines.push("——————————————");
-    lines.push(`*Opção ${idx + 1} — ${item.airline} ${item.flightNumber}* (${item.date})`);
-    lines.push(`🛫 ${item.origin} ${item.departureTime}  →  🛬 ${item.destination} ${item.arrivalTime}`);
     lines.push(
-      `⏱️ Duração: ${item.duration}  |  ${item.stops === 0 ? "Voo direto" : `${item.stops} conexão(ões)`}`
+      `*Opção ${idx + 1}${item.volta ? " — Ida e volta" : ""} — ${item.ida.airline} ${item.ida.flightNumber}* (${item.ida.date})`
     );
-    lines.push(`🧳 ${baggageLabel(item.baggage)} (${item.fareLabel})`);
+    lines.push(`🛫 IDA: ${item.ida.origin} ${item.ida.departureTime}  →  🛬 ${item.ida.destination} ${item.ida.arrivalTime}`);
+    lines.push(
+      `⏱️ Duração: ${item.ida.duration}  |  ${item.ida.stops === 0 ? "Voo direto" : `${item.ida.stops} conexão(ões)`}`
+    );
+    if (item.volta) {
+      lines.push(
+        `🛫 VOLTA: ${item.volta.origin} ${item.volta.departureTime}  →  🛬 ${item.volta.destination} ${item.volta.arrivalTime} (${item.volta.date})`
+      );
+      lines.push(
+        `⏱️ Duração: ${item.volta.duration}  |  ${item.volta.stops === 0 ? "Voo direto" : `${item.volta.stops} conexão(ões)`}`
+      );
+    }
+    lines.push(`🧳 ${item.baggage} (${item.fareLabel})`);
     lines.push(`💰 *${formatCurrencyBRL(item.price)}*`);
   });
   lines.push("——————————————");
