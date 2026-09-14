@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AgencyInfo, FlightLeg, QuoteItem } from "@/lib/types";
 import { buildWhatsAppText } from "@/lib/whatsapp";
+import { groupQuoteItems } from "@/lib/groupQuoteItems";
 import { formatCurrencyBRL, validityDatePtBR } from "@/lib/format";
 import { Check, Copy, Download, FileText, MessageCircle } from "lucide-react";
 
@@ -114,7 +115,8 @@ function LegRow({ leg, label }: { leg: FlightLeg; label?: string }) {
  * (ver src/lib/pdf/buildFlightQuoteData.ts e /api/pdf). As cores aqui
  * espelham as variáveis --cor-primaria/--cor-destaque do style.css. */
 function PdfMockPreview({ items, agency }: { items: QuoteItem[]; agency: AgencyInfo }) {
-  const minPrice = items.length ? Math.min(...items.map((i) => i.price)) : 0;
+  const groups = groupQuoteItems(items);
+  const showGroupHeaders = groups.length > 1;
   return (
     <div className="max-h-[520px] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
       <div className="mx-auto w-full max-w-[480px] bg-white p-5 text-[11px] shadow-sm">
@@ -147,43 +149,54 @@ function PdfMockPreview({ items, agency }: { items: QuoteItem[]; agency: AgencyI
           </div>
         ) : null}
 
-        <p className="mt-3 mb-2 text-[11px] font-bold text-[#1b4f8c]">
-          Opções de Voo {items.length ? `(${items.length})` : ""}
-        </p>
-
         {items.length === 0 ? (
-          <p className="text-slate-400">Nenhuma opção selecionada.</p>
+          <>
+            <p className="mt-3 mb-2 text-[11px] font-bold text-[#1b4f8c]">Opções de Voo</p>
+            <p className="text-slate-400">Nenhuma opção selecionada.</p>
+          </>
         ) : (
-          items.map((item, idx) => (
-            <div key={`${item.rowId}-${item.fareId}`} className="mb-2 overflow-hidden rounded border border-slate-200">
-              <div className="flex items-center justify-between bg-[#1b4f8c] px-2 py-1 text-white">
-                <span className="text-[9px] font-bold">
-                  Opção {idx + 1}
-                  {item.volta ? " · Ida e volta" : ""} · {item.ida.airline} {item.ida.flightNumber} · {item.ida.date}
-                </span>
-                <span className="text-[10px] font-bold">{formatCurrencyBRL(item.price)}</span>
-              </div>
-              <div className="px-2 py-1.5">
-                <LegRow leg={item.ida} label={item.volta ? "IDA" : undefined} />
-                {item.volta ? (
-                  <div className="mt-1 border-t border-slate-100 pt-1">
-                    <LegRow leg={item.volta} label="VOLTA" />
+          groups.map((group) => {
+            const minPrice = Math.min(...group.items.map((i) => i.price));
+            return (
+              <div key={group.kind}>
+                <p className="mt-3 mb-2 text-[11px] font-bold text-[#1b4f8c]">
+                  {showGroupHeaders ? group.label : "Opções de Voo"} ({group.items.length})
+                </p>
+                {group.items.map((item, idx) => (
+                  <div key={`${item.rowId}-${item.fareId}`} className="mb-2 overflow-hidden rounded border border-slate-200">
+                    <div className="flex items-center justify-between bg-[#1b4f8c] px-2 py-1 text-white">
+                      <span className="text-[9px] font-bold">
+                        Opção {idx + 1}
+                        {item.ida && item.volta ? " · Ida e volta" : ""} · {(item.ida ?? item.volta)!.airline}{" "}
+                        {(item.ida ?? item.volta)!.flightNumber} · {(item.ida ?? item.volta)!.date}
+                      </span>
+                      <span className="text-[10px] font-bold">{formatCurrencyBRL(item.price)}</span>
+                    </div>
+                    <div className="px-2 py-1.5">
+                      {item.ida ? <LegRow leg={item.ida} label={item.volta ? "IDA" : undefined} /> : null}
+                      {item.volta ? (
+                        <div className={item.ida ? "mt-1 border-t border-slate-100 pt-1" : ""}>
+                          <LegRow leg={item.volta} label={item.ida ? "VOLTA" : undefined} />
+                        </div>
+                      ) : null}
+                      <div className="mt-1 flex flex-wrap gap-x-3 border-t border-slate-100 pt-1 text-[8px] text-slate-500">
+                        <span>Bagagem: <b className="text-slate-700">{item.baggage} ({item.fareLabel})</b></span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {group.items.length > 1 ? (
+                  <div className="mb-1 flex items-center justify-between rounded border border-slate-200 bg-slate-50 px-3 py-2">
+                    <span className="text-[10px] text-slate-600">
+                      {showGroupHeaders ? `${group.label} a partir de` : "Valor a partir de"}
+                    </span>
+                    <span className="text-[13px] font-bold text-[#1b4f8c]">{formatCurrencyBRL(minPrice)}</span>
                   </div>
                 ) : null}
-                <div className="mt-1 flex flex-wrap gap-x-3 border-t border-slate-100 pt-1 text-[8px] text-slate-500">
-                  <span>Bagagem: <b className="text-slate-700">{item.baggage} ({item.fareLabel})</b></span>
-                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
-
-        {items.length > 1 ? (
-          <div className="mt-1 flex items-center justify-between rounded border border-slate-200 bg-slate-50 px-3 py-2">
-            <span className="text-[10px] text-slate-600">Valor a partir de</span>
-            <span className="text-[13px] font-bold text-[#1b4f8c]">{formatCurrencyBRL(minPrice)}</span>
-          </div>
-        ) : null}
 
         {agency.notes.trim() ? (
           <div className="mt-3 border-t border-slate-200 pt-2">

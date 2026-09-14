@@ -5,6 +5,15 @@
    importe sempre style.css ANTES deste arquivo.
    ========================================================================== */
 
+.voo-grupo-titulo {
+  margin: 0 0 6px 0;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-primaria);
+}
+
 .voo-card {
   border: 1px solid var(--cor-borda);
   border-radius: 3px;

@@ -12,7 +12,7 @@ const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const EXTRACTION_PROMPT = `Você é um extrator de dados especializado em telas de sistemas de emissão de \
 passagens aéreas usadas por agências de viagem no Brasil.
 
-A imagem em anexo pode vir em UM destes dois formatos — identifique qual é antes de extrair:
+A imagem em anexo pode vir em UM destes três formatos — identifique qual é antes de extrair:
 
 FORMATO 1 — Tabela plana de voos de ida (colunas comuns: Cia, Voo, Saída, Chegada, Dur. Total., \
 Origem, Destino, Dur. Con., Esc., Equip., Tipo, e duas seções de preço lado a lado — "Sem Bagagem" e \
@@ -20,16 +20,26 @@ Origem, Destino, Dur. Con., Esc., Equip., Tipo, e duas seções de preço lado a
 CADA LINHA da tabela como um item em "rows", preenchendo só "ida" (deixe "volta" ausente). Se a linha \
 tiver as duas colunas de preço (sem e com bagagem), gere duas entradas em "fares" para essa linha.
 
-FORMATO 2 — Cards de pacote ida e volta: cada card tem uma seção "Ida" (data + lista de opções de \
-voo com rádio/checkbox, uma delas marcada/selecionada) e uma seção "Volta" (mesma estrutura), mais um \
-painel de preço com o valor total daquele card (ex: "Valor total R$ 922,06"), tags de bagagem (ex: \
-"Até 12kg") e classe (ex: "Econômica"). Para CADA CARD, gere UMA entrada em "rows" com "ida" = a opção \
-de voo marcada/selecionada na seção Ida, "volta" = a opção marcada/selecionada na seção Volta, e UMA \
-entrada em "fares" com o preço TOTAL do painel daquele card (prefira "Valor total" se houver também um \
-preço promocional de forma de pagamento, ex: "No Pix"). NÃO gere combinações hipotéticas com as outras \
-opções de rádio não selecionadas — elas não têm preço próprio visível.
+FORMATO 2 — Duas tabelas SEPARADAS, uma pra cada trecho (geralmente com um título "Trecho Ida" acima \
+de uma tabela e "Trecho Volta" acima de outra, cada uma com sua própria numeração/paginação) — cada \
+tabela tem a MESMA estrutura de colunas do Formato 1, com preço PRÓPRIO por linha (não um preço \
+combinado). Extraia cada linha da tabela de ida como um "row" preenchendo só "ida" (deixe "volta" \
+ausente nessa linha), e cada linha da tabela de volta como um "row" separado preenchendo só "volta" \
+(deixe "ida" ausente nessa linha) — NÃO tente combinar uma linha de ida com uma de volta nesse \
+formato, elas são independentes. Extraia só as linhas visíveis (não invente as de outras páginas de \
+paginação que não aparecem na imagem).
 
-Em ambos os formatos: máxima fidelidade ao que está escrito — não traduza, não arredonde, não invente \
+FORMATO 3 — Cards de pacote ida e volta: cada card tem uma seção "Ida" (data + lista de opções de \
+voo com rádio/checkbox, uma delas marcada/selecionada) e uma seção "Volta" (mesma estrutura) DENTRO \
+DO MESMO CARD, mais um painel de preço com o valor total daquele card (ex: "Valor total R$ 922,06"), \
+tags de bagagem (ex: "Até 12kg") e classe (ex: "Econômica"). Para CADA CARD, gere UMA entrada em \
+"rows" com "ida" = a opção de voo marcada/selecionada na seção Ida, "volta" = a opção marcada/\
+selecionada na seção Volta, e UMA entrada em "fares" com o preço TOTAL do painel daquele card (prefira \
+"Valor total" se houver também um preço promocional de forma de pagamento, ex: "No Pix"). NÃO gere \
+combinações hipotéticas com as outras opções de rádio não selecionadas — elas não têm preço próprio \
+visível.
+
+Em todos os formatos: máxima fidelidade ao que está escrito — não traduza, não arredonde, não invente \
 valores nem preencha campos que não conseguir ler (use "" para texto ou 0 para número quando não \
 houver o dado). Converta valores como "R$ 1.917,15" para o número 1917.15.`;
 

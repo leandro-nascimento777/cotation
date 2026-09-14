@@ -4,13 +4,16 @@ import { z } from "zod";
 // de um print de tela. Mantemos os textos exatamente como aparecem na
 // imagem (não traduzir, não arredondar, não inventar valores).
 //
-// Suporta dois formatos de print:
-// 1) Tabela plana só de ida (uma linha por voo, com colunas De/Para/Cia/
-//    Voo/Data/Partida/Chegada) — cada linha vira um "row" com só "ida".
-// 2) Cards de pacote ida+volta (seção "Ida" com opções de voo + seção
-//    "Volta" com opções de voo + um preço total combinado por card) — cada
-//    card com uma combinação selecionada (rádio preenchido) vira um "row"
-//    com "ida" E "volta" preenchidos.
+// Suporta três formatos de print:
+// 1) Tabela plana só de ida (uma linha por voo) — cada linha vira um "row"
+//    com só "ida" preenchido.
+// 2) Duas tabelas independentes "Trecho Ida" / "Trecho Volta" (cada uma com
+//    suas próprias linhas e preços próprios, ex: sistemas de consolidadora)
+//    — linhas da tabela de ida viram "rows" só com "ida"; linhas da tabela
+//    de volta viram "rows" só com "volta".
+// 3) Cards de pacote ida+volta (seção "Ida" + seção "Volta" dentro do MESMO
+//    card, com uma combinação selecionada e um preço TOTAL combinado) —
+//    cada card vira um "row" com "ida" E "volta" preenchidos.
 
 export const flightLegSchema = z.object({
   airline: z.string().describe('Companhia aérea, ex: "GOL", "Azul", "LATAM"'),
@@ -45,19 +48,27 @@ export const fareOptionSchema = z.object({
   currency: z.string().default("BRL"),
 });
 
-export const flightRowSchema = z.object({
-  ida: flightLegSchema.describe("Trecho de ida — sempre presente"),
-  volta: flightLegSchema
-    .optional()
-    .describe(
-      'Trecho de volta — preencha SÓ se o print mostrar um pacote de ida e volta com uma combinação selecionada (rádio/checkbox marcado) e um preço combinado. Se o print for só uma tabela de voos de ida, deixe "volta" ausente.'
-    ),
-  fares: z
-    .array(fareOptionSchema)
-    .describe(
-      "Opções de tarifa/preço para esta combinação de ida (+volta, se houver). Numa tabela plana, normalmente 2 (sem/com bagagem). Num card de pacote ida+volta, normalmente 1 (o preço total exibido no painel daquele card)."
-    ),
-});
+export const flightRowSchema = z
+  .object({
+    ida: flightLegSchema
+      .optional()
+      .describe(
+        'Trecho de ida. Preencha quando a linha vier de uma tabela/seção de IDA, ou quando for a perna de ida de um card de pacote combinado (nesse caso "volta" também vem preenchido). Deixe ausente numa linha que representa só um trecho de VOLTA (tabela "Trecho Volta" separada).'
+      ),
+    volta: flightLegSchema
+      .optional()
+      .describe(
+        'Trecho de volta. Preencha quando a linha vier de uma tabela/seção de VOLTA separada (nesse caso "ida" fica ausente NESSA linha — a tabela de ida já gerou linhas próprias), ou quando for a perna de volta de um card de pacote combinado (nesse caso "ida" também vem preenchido, representando a MESMA linha/preço).'
+      ),
+    fares: z
+      .array(fareOptionSchema)
+      .describe(
+        "Opções de tarifa/preço para este trecho (ou para a combinação ida+volta, se ambos preenchidos). Numa tabela plana, normalmente 2 (sem/com bagagem). Num card de pacote ida+volta combinado, normalmente 1 (o preço total do card)."
+      ),
+  })
+  .refine((row) => row.ida || row.volta, {
+    message: "Cada linha precisa ter pelo menos um trecho (ida ou volta) preenchido.",
+  });
 
 export const extractionResultSchema = z.object({
   rows: z.array(flightRowSchema),

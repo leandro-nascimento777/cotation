@@ -1,4 +1,5 @@
 import { AgencyInfo, FlightLeg, QuoteItem } from "../types";
+import { groupQuoteItems } from "../groupQuoteItems";
 import { formatCurrencyBRL, formatDatePtBR, quoteNumber, validityDatePtBR } from "../format";
 
 interface TemplateLeg {
@@ -12,6 +13,20 @@ interface TemplateLeg {
   duracao: string;
   conexoes: string;
   equipamento: string;
+}
+
+interface TemplateOpcao {
+  ida?: TemplateLeg;
+  volta?: TemplateLeg;
+  bagagem_label: string;
+  tarifa_label: string;
+  valor: string;
+}
+
+interface TemplateGrupo {
+  titulo: string;
+  opcoes: TemplateOpcao[];
+  valor_a_partir: string;
 }
 
 /** Formato esperado pelo template Jinja2 `flight-quote.html`
@@ -33,14 +48,12 @@ export interface FlightQuoteTemplateData {
   numero_orcamento: string;
   data_validade: string;
   empresa_nome_banner: string;
-  opcoes: Array<{
-    ida: TemplateLeg;
-    volta?: TemplateLeg;
-    bagagem_label: string;
-    tarifa_label: string;
-    valor: string;
-  }>;
-  valor_a_partir: string;
+  /** Um grupo por tipo de trecho presente entre os selecionados (ida+volta
+   * combinado, só ida, só volta) — normalmente só 1 grupo (o caso comum de
+   * uma tabela única de ida). `mostrar_titulos_grupo` só fica true quando
+   * há mais de um grupo, pra não poluir visualmente o caso comum. */
+  grupos: TemplateGrupo[];
+  mostrar_titulos_grupo: boolean;
   informacoes_importantes: string;
   /** Sobrescreve as variáveis de cor do CSS quando preenchidas (usado pela
    * personalização de PDF em Configurações) — "" mantém o padrão do sistema. */
@@ -82,7 +95,7 @@ export function buildFlightQuoteData(
   options: BuildFlightQuoteDataOptions = {}
 ): FlightQuoteTemplateData {
   const selected = items.filter((i) => i.selected);
-  const minPrice = selected.length ? Math.min(...selected.map((i) => i.price)) : 0;
+  const groups = groupQuoteItems(selected);
 
   return {
     logo_url: agency.logoDataUrl || "",
@@ -104,14 +117,19 @@ export function buildFlightQuoteData(
     cor_primaria: options.corPrimaria || "",
     cor_secundaria: options.corSecundaria || "",
     cor_texto: options.corTexto || "",
-    opcoes: selected.map((item) => ({
-      ida: legToTemplate(item.ida),
-      volta: item.volta ? legToTemplate(item.volta) : undefined,
-      bagagem_label: item.baggage,
-      tarifa_label: item.fareLabel,
-      valor: formatCurrencyBRL(item.price),
+    grupos: groups.map((group) => ({
+      titulo: group.label,
+      opcoes: group.items.map((item) => ({
+        ida: item.ida ? legToTemplate(item.ida) : undefined,
+        volta: item.volta ? legToTemplate(item.volta) : undefined,
+        bagagem_label: item.baggage,
+        tarifa_label: item.fareLabel,
+        valor: formatCurrencyBRL(item.price),
+      })),
+      valor_a_partir:
+        group.items.length > 1 ? formatCurrencyBRL(Math.min(...group.items.map((i) => i.price))) : "",
     })),
-    valor_a_partir: selected.length > 1 ? formatCurrencyBRL(minPrice) : "",
+    mostrar_titulos_grupo: groups.length > 1,
     informacoes_importantes: agency.notes,
   };
 }

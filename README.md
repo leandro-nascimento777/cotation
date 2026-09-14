@@ -55,12 +55,16 @@ conectado).
   marcar como enviada. Seletor de tipo **Voo | Hotel | Pacote** — Hotel e
   Pacote aparecem na UI mas ficam desativados ("em breve"); o schema já
   reserva os campos (`HotelStay`) pra quando isso for ligado.
-  - **Ida e volta**: a extração reconhece dois formatos de print — uma
-    tabela plana só de ida (uma linha por voo), ou cards de pacote com
-    seção "Ida" + seção "Volta" e um preço total combinado por card. Cada
-    opção selecionável (`QuoteItem`) tem sempre uma perna `ida` e,
-    opcionalmente, uma perna `volta` — o PDF e o texto de WhatsApp mostram
-    as duas dentro da mesma "opção", com um preço só.
+  - **Ida e volta**: a extração reconhece três formatos de print — (1)
+    tabela plana só de ida; (2) duas tabelas independentes "Trecho Ida" /
+    "Trecho Volta" (cada uma com suas próprias linhas e preço próprio por
+    linha — comum em sistemas de consolidadora); (3) cards de pacote com
+    seção "Ida" + seção "Volta" combinadas no mesmo card e um preço total
+    único. Cada opção selecionável (`QuoteItem`) tem uma perna `ida` e/ou
+    uma perna `volta` (`src/lib/types.ts` → `legKind()`). No formato (2), o
+    WhatsApp/PDF separam automaticamente em seções **IDA** e **VOLTA**,
+    cada uma com seu próprio "a partir de" (`src/lib/groupQuoteItems.ts`);
+    no formato (3), ida+volta aparecem juntas num card só, com um preço.
 - **Clientes** (`/clientes`) — carteira de clientes com busca, cadastro e
   perfil mostrando o histórico de cotações daquele cliente.
 - **Equipe** (`/equipe`) — pessoas da agência com nome/cargo/contato, que

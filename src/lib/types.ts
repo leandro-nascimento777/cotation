@@ -25,21 +25,23 @@ export interface FareOption {
   currency: string; // "BRL"
 }
 
-/** Uma linha extraída do print — um trecho de ida e, se o print for de
- * pacote ida+volta, também o trecho de volta combinado com ele. */
+/** Uma linha extraída do print. Três formas possíveis:
+ * - só "ida": uma linha de tabela de voos de ida (ou tabela única one-way).
+ * - só "volta": uma linha de uma tabela "Trecho Volta" separada.
+ * - "ida" E "volta": um card de pacote combinado (ida+volta com 1 preço só). */
 export interface FlightRow {
   id: string;
-  ida: FlightLeg;
+  ida?: FlightLeg;
   volta?: FlightLeg;
   fares: FareOption[];
 }
 
-/** Um item selecionável na UI: uma linha de voo (ida[+volta]) + uma tarifa
- * específica dessa linha. */
+/** Um item selecionável na UI: uma linha de voo (ver FlightRow) + uma
+ * tarifa específica dessa linha. */
 export interface QuoteItem {
   rowId: string;
   fareId: string;
-  ida: FlightLeg;
+  ida?: FlightLeg;
   volta?: FlightLeg;
   baggage: string;
   fareLabel: string;
@@ -47,6 +49,24 @@ export interface QuoteItem {
   price: number;
   currency: string;
   selected: boolean;
+}
+
+export type LegKind = "combo" | "ida" | "volta";
+
+/** Classifica uma linha/item: "combo" (ida+volta com 1 preço), "ida" (só
+ * trecho de ida) ou "volta" (só trecho de volta, de uma tabela separada). */
+export function legKind(row: { ida?: FlightLeg; volta?: FlightLeg }): LegKind {
+  if (row.ida && row.volta) return "combo";
+  return row.volta ? "volta" : "ida";
+}
+
+/** O trecho "principal" de uma linha/item pra exibições genéricas de uma
+ * única perna (ex: linha só de ida, ou só de volta). Combos devem ser
+ * tratados explicitamente (mostrando ida e volta), não via este helper. */
+export function primaryLeg(row: { ida?: FlightLeg; volta?: FlightLeg }): FlightLeg {
+  const leg = row.ida ?? row.volta;
+  if (!leg) throw new Error("Linha de voo sem nenhum trecho (ida/volta) preenchido.");
+  return leg;
 }
 
 export interface AgencyInfo {

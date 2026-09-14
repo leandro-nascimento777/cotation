@@ -2,7 +2,9 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { FlightQuoteTemplateData } from "./buildFlightQuoteData";
 
-type TemplateLeg = FlightQuoteTemplateData["opcoes"][number]["ida"];
+type TemplateGrupo = FlightQuoteTemplateData["grupos"][number];
+type TemplateOpcao = TemplateGrupo["opcoes"][number];
+type TemplateLeg = NonNullable<TemplateOpcao["ida"]>;
 
 // Reaproveita as MESMAS folhas de estilo do template Jinja2/WeasyPrint em
 // pdf-template/ (style.css + flight-quote.css) — uma única fonte de verdade
@@ -125,15 +127,14 @@ function renderLeg(leg: TemplateLeg, label?: string): string {
         </div>`;
 }
 
-function renderOpcoes(data: FlightQuoteTemplateData): string {
-  if (!data.opcoes.length) {
-    return `<p style="font-size: 10px; color: var(--cor-texto-suave);">Nenhuma opção selecionada.</p>`;
-  }
-  return data.opcoes
+function renderOpcoes(opcoes: TemplateOpcao[]): string {
+  return opcoes
     .map((o, idx) => {
-      const titulo = o.volta
-        ? `Opção ${idx + 1} · Ida e volta · ${escapeHtml(o.ida.cia_aerea)}`
-        : `Opção ${idx + 1} · ${escapeHtml(o.ida.cia_aerea)} ${escapeHtml(o.ida.numero_voo)} · ${escapeHtml(o.ida.data)}`;
+      const principal = o.ida ?? o.volta!;
+      const titulo =
+        o.ida && o.volta
+          ? `Opção ${idx + 1} · Ida e volta · ${escapeHtml(principal.cia_aerea)}`
+          : `Opção ${idx + 1} · ${escapeHtml(principal.cia_aerea)} ${escapeHtml(principal.numero_voo)} · ${escapeHtml(principal.data)}`;
       return `
     <div class="voo-card">
       <div class="voo-card-header">
@@ -141,8 +142,8 @@ function renderOpcoes(data: FlightQuoteTemplateData): string {
         <span class="voo-card-preco">${escapeHtml(o.valor)}</span>
       </div>
       <div class="voo-card-body">
-        ${renderLeg(o.ida, o.volta ? "Ida" : undefined)}
-        ${o.volta ? `<div class="voo-leg-divisor"></div>${renderLeg(o.volta, "Volta")}` : ""}
+        ${o.ida ? renderLeg(o.ida, o.volta ? "Ida" : undefined) : ""}
+        ${o.volta ? `${o.ida ? '<div class="voo-leg-divisor"></div>' : ""}${renderLeg(o.volta, o.ida ? "Volta" : undefined)}` : ""}
         <div class="voo-meta voo-meta-final">
           <span>Bagagem: <strong>${escapeHtml(o.bagagem_label)} (${escapeHtml(o.tarifa_label)})</strong></span>
         </div>
@@ -150,6 +151,22 @@ function renderOpcoes(data: FlightQuoteTemplateData): string {
     </div>`;
     })
     .join("");
+}
+
+function renderGrupo(grupo: TemplateGrupo, mostrarTitulo: boolean): string {
+  const rotulo = mostrarTitulo ? grupo.titulo : "Valor a partir de";
+  return `
+    ${mostrarTitulo ? `<h3 class="voo-grupo-titulo">${escapeHtml(grupo.titulo)}</h3>` : ""}
+    ${renderOpcoes(grupo.opcoes)}
+    ${
+      grupo.valor_a_partir
+        ? `
+    <div class="valor-a-partir-box">
+      <span style="font-size: 10px; color: var(--cor-texto-suave);">${escapeHtml(mostrarTitulo ? `${rotulo} a partir de` : rotulo)}</span>
+      <span class="valor-a-partir-valor">${escapeHtml(grupo.valor_a_partir)}</span>
+    </div>`
+        : ""
+    }`;
 }
 
 /** Monta o HTML completo da cotação de voos (equivalente ao
@@ -188,6 +205,7 @@ function renderColorOverrides(data: FlightQuoteTemplateData): string {
 
 export async function renderFlightQuoteHtml(data: FlightQuoteTemplateData): Promise<string> {
   const css = await loadCss();
+  const totalOpcoes = data.grupos.reduce((sum, g) => sum + g.opcoes.length, 0);
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -203,17 +221,12 @@ ${renderColorOverrides(data)}
   <section class="secao">
     <h2 class="titulo-secao">
       <span class="icone">${AVIAO_SVG}</span>
-      Opções de Voo${data.opcoes.length > 1 ? ` (${data.opcoes.length})` : ""}
+      Opções de Voo${totalOpcoes > 1 ? ` (${totalOpcoes})` : ""}
     </h2>
-    ${renderOpcoes(data)}
     ${
-      data.valor_a_partir
-        ? `
-    <div class="valor-a-partir-box">
-      <span style="font-size: 10px; color: var(--cor-texto-suave);">Valor a partir de</span>
-      <span class="valor-a-partir-valor">${escapeHtml(data.valor_a_partir)}</span>
-    </div>`
-        : ""
+      totalOpcoes === 0
+        ? `<p style="font-size: 10px; color: var(--cor-texto-suave);">Nenhuma opção selecionada.</p>`
+        : data.grupos.map((grupo) => renderGrupo(grupo, data.mostrar_titulos_grupo)).join("")
     }
   </section>
   ${

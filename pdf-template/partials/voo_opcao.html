@@ -1,0 +1,26 @@
+{% from "partials/voo_leg.html" import voo_leg %}
+{# Macro que renderiza um card de opção (ida, ou ida+volta combinado) —
+   usada dentro de um grupo em flight-quote.html. #}
+{% macro voo_opcao(opcao, numero) %}
+<div class="voo-card">
+  <div class="voo-card-header">
+    {% if opcao.ida and opcao.volta %}
+    <span>Opção {{ numero }} · Ida e volta · {{ opcao.ida.cia_aerea }}</span>
+    {% else %}
+    {% set principal = opcao.ida or opcao.volta %}
+    <span>Opção {{ numero }} · {{ principal.cia_aerea }} {{ principal.numero_voo }} · {{ principal.data }}</span>
+    {% endif %}
+    <span class="voo-card-preco">{{ opcao.valor }}</span>
+  </div>
+  <div class="voo-card-body">
+    {% if opcao.ida %}{{ voo_leg(opcao.ida, "Ida" if opcao.volta else None) }}{% endif %}
+    {% if opcao.volta %}
+    {% if opcao.ida %}<div class="voo-leg-divisor"></div>{% endif %}
+    {{ voo_leg(opcao.volta, "Volta" if opcao.ida else None) }}
+    {% endif %}
+    <div class="voo-meta voo-meta-final">
+      <span>Bagagem: <strong>{{ opcao.bagagem_label }} ({{ opcao.tarifa_label }})</strong></span>
+    </div>
+  </div>
+</div>
+{% endmacro %}
