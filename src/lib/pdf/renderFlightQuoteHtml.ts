@@ -1,0 +1,185 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { FlightQuoteTemplateData } from "./buildFlightQuoteData";
+
+// Reaproveita as MESMAS folhas de estilo do template Jinja2/WeasyPrint em
+// pdf-template/ (style.css + flight-quote.css) — uma única fonte de verdade
+// de design para os dois pipelines de geração de PDF (Python standalone e
+// Node/Puppeteer usado pelo app). Só a "montagem" do HTML muda.
+const PDF_TEMPLATE_DIR = path.join(process.cwd(), "pdf-template");
+
+export function escapeHtml(value: string | number | undefined | null): string {
+  if (value === undefined || value === null) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** Equivalente ao filtro Jinja2 `nl2br` do generate_pdf.py: parágrafos
+ * separados por linha em branco, com escape de segurança. */
+function nl2br(value: string): string {
+  if (!value) return "";
+  return value
+    .replace(/\r\n/g, "\n")
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
+let cachedCss: string | null = null;
+async function loadCss(): Promise<string> {
+  if (cachedCss) return cachedCss;
+  const [base, flightQuote] = await Promise.all([
+    readFile(path.join(PDF_TEMPLATE_DIR, "style.css"), "utf8"),
+    readFile(path.join(PDF_TEMPLATE_DIR, "flight-quote.css"), "utf8"),
+  ]);
+  // O Puppeteer controla o tamanho/margem da página via page.pdf({ format,
+  // margin }) — a regra @page do style.css (pensada pro WeasyPrint) é
+  // removida aqui porque o Chromium a respeita de um jeito que ANULA a
+  // opção `margin` do page.pdf() (testado: com "@page { margin: 0 }" no
+  // CSS, a margem passada em page.pdf() é ignorada e o conteúdo cola nas
+  // bordas). Sem nenhuma regra @page, page.pdf({ margin }) funciona normal.
+  const stripPageRule = (css: string) => css.replace(/@page\s*{[^}]*}/g, "");
+  cachedCss = `${stripPageRule(base)}\n${stripPageRule(flightQuote)}`;
+  return cachedCss;
+}
+
+function renderHeader(data: FlightQuoteTemplateData): string {
+  const logo = data.logo_url
+    ? `<img src="${escapeHtml(data.logo_url)}" alt="Logo da agência" class="logo">`
+    : `<div class="logo-placeholder">LOGO</div>`;
+
+  const addressLines = [
+    data.agencia_endereco_linha1,
+    data.agencia_endereco_linha2,
+    data.agencia_endereco_linha3,
+    data.agencia_cep,
+  ]
+    .filter(Boolean)
+    .map((l) => `<p>${escapeHtml(l)}</p>`)
+    .join("");
+
+  const rightLines = [
+    data.filial_numero && `<p><span class="label">Filial:</span> ${escapeHtml(data.filial_numero)}</p>`,
+    data.vendedor_nome && `<p><span class="label">Vendedor:</span> ${escapeHtml(data.vendedor_nome)}</p>`,
+    data.vendedor_email && `<p><span class="label">Email:</span> ${escapeHtml(data.vendedor_email)}</p>`,
+    data.telefone && `<p><span class="label">Fone:</span> ${escapeHtml(data.telefone)}</p>`,
+    data.cnpj && `<p><span class="label">CNPJ:</span> ${escapeHtml(data.cnpj)}</p>`,
+    data.cadastur && `<p><span class="label">Cadastur:</span> ${escapeHtml(data.cadastur)}</p>`,
+  ]
+    .filter(Boolean)
+    .join("");
+
+  return `
+  <header class="header">
+    <div class="header-left">${logo}</div>
+    <div class="header-center">
+      <p class="agencia-nome">${escapeHtml(data.agencia_nome)}</p>
+      ${addressLines}
+    </div>
+    <div class="header-right">${rightLines}</div>
+  </header>`;
+}
+
+function renderLinhaData(data: FlightQuoteTemplateData): string {
+  const validade = data.data_validade
+    ? `<br><span class="validade">Válido até ${escapeHtml(data.data_validade)}</span>`
+    : "";
+  return `
+  <div class="linha-data">
+    <span>${escapeHtml(data.data_emissao)}</span>
+    <span class="linha-data-direita">Orçamento nº <strong>${escapeHtml(data.numero_orcamento)}</strong>${validade}</span>
+  </div>`;
+}
+
+const AVIAO_SVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2.5 1.8V22l3.5-1 3.5 1v-1.2L12 19v-5.5l9 2.5z"/></svg>`;
+
+function renderOpcoes(data: FlightQuoteTemplateData): string {
+  if (!data.opcoes.length) {
+    return `<p style="font-size: 10px; color: var(--cor-texto-suave);">Nenhuma opção selecionada.</p>`;
+  }
+  return data.opcoes
+    .map(
+      (o, idx) => `
+    <div class="voo-card">
+      <div class="voo-card-header">
+        <span>Opção ${idx + 1} · ${escapeHtml(o.cia_aerea)} ${escapeHtml(o.numero_voo)} · ${escapeHtml(o.data)}</span>
+        <span class="voo-card-preco">${escapeHtml(o.valor)}</span>
+      </div>
+      <div class="voo-card-body">
+        <div class="voo-rota">
+          <div class="voo-rota-origem">
+            <p class="voo-aeroporto">${escapeHtml(o.origem)}</p>
+            <p class="voo-horario">Partida ${escapeHtml(o.hora_partida)}</p>
+          </div>
+          <span class="voo-seta">&#9644;&#9644;&#9644;&#9644;&#9654;</span>
+          <div class="voo-rota-destino">
+            <p class="voo-aeroporto">${escapeHtml(o.destino)}</p>
+            <p class="voo-horario">Chegada ${escapeHtml(o.hora_chegada)}</p>
+          </div>
+        </div>
+        <div class="voo-meta">
+          <span>Duração: <strong>${escapeHtml(o.duracao)}</strong></span>
+          <span>Conexões: <strong>${escapeHtml(o.conexoes)}</strong></span>
+          ${o.equipamento ? `<span>Equip.: <strong>${escapeHtml(o.equipamento)}</strong></span>` : ""}
+          <span>Bagagem: <strong>${escapeHtml(o.bagagem_label)} (${escapeHtml(o.tarifa_label)})</strong></span>
+        </div>
+      </div>
+    </div>`
+    )
+    .join("");
+}
+
+/** Monta o HTML completo da cotação de voos (equivalente ao
+ * pdf-template/flight-quote.html renderizado pelo Jinja2, mas em JS puro —
+ * usado pelo Puppeteer no lugar do WeasyPrint). */
+export async function renderFlightQuoteHtml(data: FlightQuoteTemplateData): Promise<string> {
+  const css = await loadCss();
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Orçamento ${escapeHtml(data.numero_orcamento)}</title>
+<style>${css}</style>
+</head>
+<body>
+  ${renderHeader(data)}
+  ${renderLinhaData(data)}
+  ${data.empresa_nome_banner ? `<div class="banner-destaque"><p>${escapeHtml(data.empresa_nome_banner)}</p></div>` : ""}
+  <section class="secao">
+    <h2 class="titulo-secao">
+      <span class="icone">${AVIAO_SVG}</span>
+      Opções de Voo${data.opcoes.length > 1 ? ` (${data.opcoes.length})` : ""}
+    </h2>
+    ${renderOpcoes(data)}
+    ${
+      data.valor_a_partir
+        ? `
+    <div class="valor-a-partir-box">
+      <span style="font-size: 10px; color: var(--cor-texto-suave);">Valor a partir de</span>
+      <span class="valor-a-partir-valor">${escapeHtml(data.valor_a_partir)}</span>
+    </div>`
+        : ""
+    }
+  </section>
+  ${
+    data.informacoes_importantes
+      ? `
+  <section class="secao secao-final">
+    <h2 class="titulo-secao">Informações importantes</h2>
+    <div class="texto-livre">${nl2br(data.informacoes_importantes)}</div>
+  </section>`
+      : ""
+  }
+  <footer class="rodape">
+    <span>${escapeHtml(data.agencia_nome)}</span>
+    <span>${escapeHtml(data.data_emissao)}</span>
+  </footer>
+</body>
+</html>`;
+}

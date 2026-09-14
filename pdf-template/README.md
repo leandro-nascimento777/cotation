@@ -11,9 +11,12 @@ Tem dois templates prontos:
   fiel ao modelo de referência CVC. Uso standalone via `generate_pdf.py`.
 - **`flight-quote.html`** — layout mais enxuto (cabeçalho + banner + cards de
   opções de voo com preço), reaproveitando as mesmas variáveis de marca e o
-  mesmo cabeçalho. É o template usado pelo app Next.js (`/api/pdf` chama este
-  script apontando `--template flight-quote.html`) — ver `src/lib/pdf/buildFlightQuoteData.ts`
-  no projeto raiz para o mapeamento de dados.
+  mesmo cabeçalho. É a versão Jinja2/standalone do design que o app Next.js
+  usa — o app tem sua própria implementação em JS puro
+  (`src/lib/pdf/renderFlightQuoteHtml.ts`, renderizada via Puppeteer em vez
+  de WeasyPrint, pra rodar em Vercel Functions), mas os dois consomem
+  exatamente `style.css` + `flight-quote.css` como fonte única de verdade do
+  design — mudar uma cor aqui muda nos dois lugares.
 
 Os dois compartilham `style.css` e os partials de cabeçalho
 (`partials/header.html`, `partials/linha_data.html`), então uma troca de cor
@@ -31,7 +34,7 @@ de marca ou de logo vale para ambos.
 | Arquivo                        | Papel                                                             |
 | ------------------------------- | ------------------------------------------------------------------ |
 | `template.html`                 | Layout de pacote completo, com placeholders `{{ variavel }}` e loops `{% for %}` |
-| `flight-quote.html`             | Layout de cotação de voos (usado pelo app Next.js)                |
+| `flight-quote.html`             | Layout de cotação de voos (versão Jinja2 standalone do design do app) |
 | `partials/header.html`          | Cabeçalho compartilhado (logo + dados da agência)                 |
 | `partials/linha_data.html`      | Linha de data de emissão + número do orçamento                    |
 | `style.css`                     | Estilo base, com as cores de marca em variáveis CSS (`:root`)     |
@@ -80,7 +83,7 @@ Especificar outro JSON de dados e/ou nome de saída:
 python generate_pdf.py --data meu_orcamento.json --output orcamento-cliente.pdf
 ```
 
-Usar o template de cotação de voos (o mesmo que o app Next.js chama):
+Usar o template de cotação de voos (mesmo design que o app Next.js usa):
 
 ```bash
 python generate_pdf.py --data meu_orcamento_voos.json --template flight-quote.html
@@ -154,6 +157,13 @@ Todas as cores de marca estão centralizadas no topo de `style.css`, em
 
 Troque só essas variáveis para adaptar o template a outra identidade visual
 — nenhuma outra cor está fixa no restante do CSS.
+
+## Validade do orçamento
+
+`data_validade` (opcional) mostra "Válido até {{ data_validade }}" logo
+abaixo do número do orçamento, na mesma linha de `data_emissao` +
+`numero_orcamento`. Se o campo vier vazio/ausente do JSON, essa linha some
+automaticamente — não precisa remover nada do template.
 
 ## Campo de texto livre ("Informações importantes")
 

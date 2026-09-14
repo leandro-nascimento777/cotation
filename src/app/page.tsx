@@ -6,7 +6,7 @@ import { FlightList } from "@/components/FlightList";
 import { AgencyForm } from "@/components/AgencyForm";
 import { PreviewPanel } from "@/components/PreviewPanel";
 import { AgencyInfo, defaultAgencyInfo, FlightRow, flightRowsToQuoteItems, QuoteItem } from "@/lib/types";
-import { PlaneTakeoff } from "lucide-react";
+import { PlaneTakeoff, Trash2 } from "lucide-react";
 
 export default function Home() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -37,6 +37,13 @@ export default function Home() {
     } finally {
       setExtractLoading(false);
     }
+  };
+
+  const handleClear = () => {
+    setImagePreview(null);
+    setItems([]);
+    setExtractError(null);
+    setPdfError(null);
   };
 
   const handleToggle = (rowId: string, fareId: string) => {
@@ -85,10 +92,19 @@ export default function Home() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-600">
             <PlaneTakeoff className="h-5 w-5 text-white" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-lg font-bold text-slate-900">Gerador de Orçamento</h1>
             <p className="text-xs text-slate-500">Print de voos → orçamento pronto para WhatsApp e PDF</p>
           </div>
+          {imagePreview || items.length > 0 ? (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Limpar orçamento
+            </button>
+          ) : null}
         </div>
       </header>
 

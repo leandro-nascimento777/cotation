@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AgencyInfo, QuoteItem } from "@/lib/types";
 import { buildWhatsAppText } from "@/lib/whatsapp";
-import { baggageLabel, formatCurrencyBRL } from "@/lib/format";
+import { baggageLabel, formatCurrencyBRL, validityDatePtBR } from "@/lib/format";
 import { Check, Copy, Download, FileText, MessageCircle } from "lucide-react";
 
 interface PreviewPanelProps {
@@ -113,12 +113,13 @@ function PdfMockPreview({ items, agency }: { items: QuoteItem[]; agency: AgencyI
           <div className="text-right text-[9px] text-slate-500">
             <p>Orçamento nº</p>
             <p className="text-sm font-bold text-[#1b4f8c]">ORC-{new Date().getFullYear()}-XXXXXX</p>
+            <p className="text-slate-400">Válido até {validityDatePtBR(agency.validityDays)}</p>
             <p>{[agency.sellerName, agency.phone, agency.email].filter(Boolean).join(" · ")}</p>
           </div>
         </div>
 
         {agency.message.trim() ? (
-          <div className="mt-3 rounded bg-[#ffd400] px-3 py-2 text-center text-[10px] font-bold text-[#3a2e00]">
+          <div className="mt-3 rounded bg-[#8a2be2] px-3 py-2 text-center text-[10px] font-bold text-white">
             {agency.message.trim()}
           </div>
         ) : null}

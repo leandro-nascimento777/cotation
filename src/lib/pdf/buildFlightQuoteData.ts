@@ -1,5 +1,5 @@
 import { AgencyInfo, QuoteItem } from "../types";
-import { baggageLabel, formatCurrencyBRL, formatDatePtBR, quoteNumber } from "../format";
+import { baggageLabel, formatCurrencyBRL, formatDatePtBR, quoteNumber, validityDatePtBR } from "../format";
 
 /** Formato esperado pelo template Jinja2 `flight-quote.html`
  * (ver pdf-template/flight-quote.html e pdf-template/README.md). */
@@ -14,8 +14,11 @@ export interface FlightQuoteTemplateData {
   vendedor_nome: string;
   vendedor_email: string;
   telefone: string;
+  cnpj: string;
+  cadastur: string;
   data_emissao: string;
   numero_orcamento: string;
+  data_validade: string;
   empresa_nome_banner: string;
   opcoes: Array<{
     cia_aerea: string;
@@ -57,8 +60,11 @@ export function buildFlightQuoteData(
     vendedor_nome: agency.sellerName,
     vendedor_email: agency.email,
     telefone: agency.phone,
+    cnpj: agency.cnpj,
+    cadastur: agency.cadastur,
     data_emissao: formatDatePtBR(),
     numero_orcamento: quoteNumber(),
+    data_validade: validityDatePtBR(agency.validityDays),
     empresa_nome_banner: agency.message,
     opcoes: selected.map((item) => ({
       cia_aerea: item.airline,

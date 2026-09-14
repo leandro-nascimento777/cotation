@@ -1,5 +1,5 @@
 import { AgencyInfo, QuoteItem } from "./types";
-import { baggageLabel, formatCurrencyBRL } from "./format";
+import { baggageLabel, formatCurrencyBRL, validityDatePtBR } from "./format";
 
 /** Gera o texto formatado (Markdown do WhatsApp: *negrito*, _itálico_) a
  * partir dos itens selecionados e dos dados da agência. */
@@ -38,6 +38,9 @@ export function buildWhatsAppText(items: QuoteItem[], agency: AgencyInfo): strin
     lines.push(`💡 A partir de *${formatCurrencyBRL(min)}*`);
     lines.push("");
   }
+
+  lines.push(`🗓️ Cotação válida até *${validityDatePtBR(agency.validityDays)}*`);
+  lines.push("");
 
   if (agency.notes.trim()) {
     lines.push(`_${agency.notes.trim()}_`);

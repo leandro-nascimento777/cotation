@@ -8,8 +8,8 @@
 :root {
   --cor-primaria: #1b4f8c;       /* barras de título de seção, títulos, bordas de destaque */
   --cor-primaria-clara: #eaf0f8; /* fundo leve derivado da cor primária (cabeçalho de tabela) */
-  --cor-destaque: #ffd400;       /* banner de agradecimento */
-  --cor-destaque-texto: #3a2e00; /* texto sobre o banner amarelo */
+  --cor-destaque: #8a2be2;       /* banner de agradecimento */
+  --cor-destaque-texto: #ffffff; /* texto sobre o banner de destaque */
   --cor-borda: #cccccc;          /* bordas de tabela e caixas */
   --cor-texto: #222222;
   --cor-texto-suave: #555555;
@@ -70,7 +70,7 @@ p {
   height: 60px;
   background: #e2e2e2;
   border: 1px dashed #9a9a9a;
-  color: #8a8a8a;
+  color: var(--cor-texto-suave);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -114,12 +114,22 @@ p {
 .linha-data {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   font-size: 10px;
   margin-bottom: 10px;
 }
 
 .linha-data strong {
   color: var(--cor-primaria);
+}
+
+.linha-data-direita {
+  text-align: right;
+}
+
+.linha-data .validade {
+  font-size: 8.5px;
+  color: var(--cor-texto-suave);
 }
 
 /* ---------- Banner de agradecimento ---------- */
@@ -251,7 +261,7 @@ p {
 }
 
 .tabela .small {
-  font-size: 8.5px;
+  font-size: 9px;
   color: var(--cor-texto-suave);
 }
 

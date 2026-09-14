@@ -35,3 +35,36 @@ export function formatDatePtBR(date = new Date()): string {
     .join("-");
   return weekday + formatted.slice(commaIndex);
 }
+
+/** Formata dígitos de CNPJ como "00.000.000/0000-00" enquanto o usuário
+ * digita (aceita colar com ou sem pontuação). */
+export function formatCnpjMask(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  const parts = [
+    [0, 2],
+    [2, 5],
+    [5, 8],
+    [8, 12],
+    [12, 14],
+  ] as const;
+  let out = "";
+  for (const [start, end] of parts) {
+    if (digits.length > start) out += digits.slice(start, end);
+    if (end === 2 && digits.length > 2) out += ".";
+    if (end === 5 && digits.length > 5) out += ".";
+    if (end === 8 && digits.length > 8) out += "/";
+    if (end === 12 && digits.length > 12) out += "-";
+  }
+  return out;
+}
+
+/** Data de validade da cotação: hoje + N dias, formato curto (DD/MM/AAAA). */
+export function validityDatePtBR(days: number, from = new Date()): string {
+  const date = new Date(from);
+  date.setDate(date.getDate() + days);
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
