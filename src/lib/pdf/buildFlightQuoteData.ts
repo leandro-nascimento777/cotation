@@ -37,6 +37,20 @@ export interface FlightQuoteTemplateData {
   }>;
   valor_a_partir: string;
   informacoes_importantes: string;
+  /** Sobrescreve as variáveis de cor do CSS quando preenchidas (usado pela
+   * personalização de PDF em Configurações) — "" mantém o padrão do sistema. */
+  cor_primaria: string;
+  cor_secundaria: string;
+  cor_texto: string;
+}
+
+export interface BuildFlightQuoteDataOptions {
+  /** Número de orçamento já atribuído (ex: por uma cotação salva) — se
+   * omitido, gera um novo número aleatório via quoteNumber(). */
+  numeroOrcamento?: string;
+  corPrimaria?: string;
+  corSecundaria?: string;
+  corTexto?: string;
 }
 
 /** Converte os itens selecionados pelo agente + os dados da agência no
@@ -44,7 +58,8 @@ export interface FlightQuoteTemplateData {
  * espera receber. */
 export function buildFlightQuoteData(
   items: QuoteItem[],
-  agency: AgencyInfo
+  agency: AgencyInfo,
+  options: BuildFlightQuoteDataOptions = {}
 ): FlightQuoteTemplateData {
   const selected = items.filter((i) => i.selected);
   const minPrice = selected.length ? Math.min(...selected.map((i) => i.price)) : 0;
@@ -63,9 +78,12 @@ export function buildFlightQuoteData(
     cnpj: agency.cnpj,
     cadastur: agency.cadastur,
     data_emissao: formatDatePtBR(),
-    numero_orcamento: quoteNumber(),
+    numero_orcamento: options.numeroOrcamento || quoteNumber(),
     data_validade: validityDatePtBR(agency.validityDays),
     empresa_nome_banner: agency.message,
+    cor_primaria: options.corPrimaria || "",
+    cor_secundaria: options.corSecundaria || "",
+    cor_texto: options.corTexto || "",
     opcoes: selected.map((item) => ({
       cia_aerea: item.airline,
       numero_voo: item.flightNumber,

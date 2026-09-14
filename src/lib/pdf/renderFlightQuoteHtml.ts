@@ -138,6 +138,37 @@ function renderOpcoes(data: FlightQuoteTemplateData): string {
 /** Monta o HTML completo da cotação de voos (equivalente ao
  * pdf-template/flight-quote.html renderizado pelo Jinja2, mas em JS puro —
  * usado pelo Puppeteer no lugar do WeasyPrint). */
+/** Bloco de override de cores (personalização do PDF em Configurações) —
+ * injetado DEPOIS do CSS base, então só entra em vigor quando ao menos uma
+ * cor for informada. Usa color-mix() (suportado pelo Chromium/Puppeteer)
+ * pra derivar tons claros/de contraste sem precisar calcular manualmente. */
+// Só aceita hex (#fff, #ffffff) — as cores vão para dentro de uma tag
+// <style> interpolada em string, então validamos estritamente o formato
+// antes de injetar (defesa contra CSS/HTML injection caso algo chame a
+// API diretamente com um valor malicioso).
+const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/;
+
+function renderColorOverrides(data: FlightQuoteTemplateData): string {
+  const primaria = HEX_COLOR.test(data.cor_primaria) ? data.cor_primaria : "";
+  const secundaria = HEX_COLOR.test(data.cor_secundaria) ? data.cor_secundaria : "";
+  const texto = HEX_COLOR.test(data.cor_texto) ? data.cor_texto : "";
+  if (!primaria && !secundaria && !texto) return "";
+
+  const rules: string[] = [];
+  if (primaria) {
+    rules.push(`--cor-primaria: ${primaria};`);
+    rules.push(`--cor-primaria-clara: color-mix(in srgb, ${primaria} 12%, white);`);
+  }
+  if (secundaria) {
+    rules.push(`--cor-destaque: ${secundaria};`);
+    rules.push(`--cor-destaque-texto: color-mix(in srgb, ${secundaria} 75%, black);`);
+  }
+  if (texto) {
+    rules.push(`--cor-texto: ${texto};`);
+  }
+  return `<style>:root { ${rules.join(" ")} }</style>`;
+}
+
 export async function renderFlightQuoteHtml(data: FlightQuoteTemplateData): Promise<string> {
   const css = await loadCss();
   return `<!DOCTYPE html>
@@ -146,6 +177,7 @@ export async function renderFlightQuoteHtml(data: FlightQuoteTemplateData): Prom
 <meta charset="UTF-8">
 <title>Orçamento ${escapeHtml(data.numero_orcamento)}</title>
 <style>${css}</style>
+${renderColorOverrides(data)}
 </head>
 <body>
   ${renderHeader(data)}

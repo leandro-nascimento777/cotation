@@ -1,20 +1,19 @@
-# Gerador de Orçamento — Agências de Viagem
+# Cotation — Plataforma de Cotação e Gestão de Clientes para Agências de Viagem
 
-App simples para agências de viagem: o agente tira um **print de uma tela de\
-comparação de voos**, a IA (Gemini) extrai os dados da tabela com fidelidade,\
-o agente escolhe (checkbox) quais opções entram no orçamento — com preview ao\
-vivo — e o app gera a saída em dois formatos:
-
-- **Texto Markdown para WhatsApp** (copiar e colar)
-- **PDF** formatado para envio ao cliente (logo da agência substituível, com\
-  drag-and-drop; CNPJ auto-preenchível; Cadastur)
+Começou como um gerador de orçamento (print de voos → PDF/WhatsApp) e evoluiu
+para uma plataforma completa: **Dashboard**, **Cotações**, **Clientes**,
+**Equipe** e **Configurações**, com o mesmo motor de extração de voos e
+geração de PDF de sempre.
 
 ## Stack
 
 - Next.js (App Router) + TypeScript + Tailwind CSS
-- [AI SDK](https://ai-sdk.dev) + Gemini (`@ai-sdk/google`) para extração fiel dos dados do print (`generateObject` com schema Zod)
+- [AI SDK](https://ai-sdk.dev) + Gemini (`@ai-sdk/google`) para extração fiel dos dados do print de voos (`generateObject` com schema Zod)
 - **Puppeteer (Chromium headless)** para gerar o PDF, reaproveitando o HTML/CSS do template em [`pdf-template/`](pdf-template/) — roda 100% em Node, compatível com Vercel Functions
 - Consulta pública de CNPJ via [BrasilAPI](https://brasilapi.com.br) (gratuita, sem chave)
+- **Persistência**: Context React + `localStorage` (sem banco real ainda —
+  ver `prisma/schema.prisma`, o desenho pronto pra quando isso for conectado)
+- `sonner` para toasts
 
 ## Como rodar
 
@@ -24,7 +23,7 @@ vivo — e o app gera a saída em dois formatos:
    npm install
    ```
 
-2. Copie `.env.local.example` para `.env.local` e adicione sua chave gratuita\
+2. Copie `.env.local.example` para `.env.local` e adicione sua chave gratuita
    do Gemini (gere em https://aistudio.google.com/apikey):
 
    ```bash
@@ -39,61 +38,94 @@ vivo — e o app gera a saída em dois formatos:
 
 4. Abra http://localhost:3000
 
-## Fluxo
+Os dados (agência, equipe, clientes, cotações) ficam salvos no
+`localStorage` do navegador — sobrevivem a um refresh, mas são por
+navegador/dispositivo (não sincronizam entre máquinas até um banco real ser
+conectado).
 
-1. **Upload do print** — arraste ou selecione a imagem da tela de voos.
-2. **Extração automática** — a IA lê a imagem e devolve cada linha de voo com\
-   suas tarifas (sem/com bagagem).
-3. **Seleção** — marque quais opções (voo + tipo de tarifa) entram no orçamento;\
-   o preview à direita atualiza em tempo real.
-4. **Dados da agência** — logo (arraste ou clique), CNPJ (busca automática de\
-   nome/endereço/telefone), Cadastur, vendedor, contato, validade da cotação,\
-   mensagem de destaque e observações — tudo entra automaticamente no texto e\
-   no PDF.
-5. **Gerar saída** — copie o texto formatado para WhatsApp ou baixe o PDF.
-6. **Limpar orçamento** — o botão no topo apaga o print e os dados extraídos\
-   para começar uma nova cotação (mantém os dados da agência preenchidos).
+## Módulos
+
+- **Dashboard** (`/`) — vendas do mês, nº de orçamentos, taxa de conversão
+  (vs. mês anterior), gráfico dos últimos 6 meses (gerados x fechados),
+  últimas cotações e clientes recentes.
+- **Cotações** (`/cotacoes`) — lista com busca/filtro por status, cliente e
+  destino. `/cotacoes/nova` é o fluxo principal: upload do print de voos →
+  extração automática → checkboxes → dados da cotação (cliente, responsável,
+  pagamento, validade) → gera WhatsApp/PDF e salva. Ação de duplicar e de
+  marcar como enviada. Seletor de tipo **Voo | Hotel | Pacote** — Hotel e
+  Pacote aparecem na UI mas ficam desativados ("em breve"); o schema já
+  reserva os campos (`HotelStay`) pra quando isso for ligado.
+- **Clientes** (`/clientes`) — carteira de clientes com busca, cadastro e
+  perfil mostrando o histórico de cotações daquele cliente.
+- **Equipe** (`/equipe`) — pessoas da agência com nome/cargo/contato, que
+  podem ser escolhidas como **responsável** de cada cotação (auto-preenche
+  vendedor/telefone/e-mail; a página mostra quantas cotações cada pessoa tem).
+- **Configurações** (`/configuracoes`) — dados da agência (nome, CNPJ com
+  busca automática, Cadastur, logo com drag-and-drop, site), vendedor padrão,
+  numeração de orçamento (prefixo + próximo número) e identidade visual do
+  PDF (3 cores customizáveis + botão "usar padrão do sistema").
 
 ## Estrutura
 
 ```
 src/
   app/
+    page.tsx                    # Dashboard
+    cotacoes/{page,nova,[id]}.tsx
+    clientes/{page,novo,[id]}.tsx
+    equipe/page.tsx
+    configuracoes/page.tsx
     api/extract/route.ts        # extração via IA (Gemini + generateObject)
     api/pdf/route.ts            # gera o PDF via Puppeteer
     api/cnpj/route.ts           # consulta CNPJ (proxy pra BrasilAPI)
-    page.tsx                    # UI principal
   components/
-    UploadCard.tsx
-    FlightList.tsx
-    AgencyForm.tsx               # logo (drag-and-drop), CNPJ, Cadastur, validade
-    PreviewPanel.tsx
+    shell/                      # Sidebar, AppShell, PageHeader, EmptyState, StatusBadge
+    cotacoes/                   # QuoteEditor, QuoteExtrasForm, ClientPicker, TeamMemberPicker...
+    clientes/ClientForm.tsx
+    dashboard/                  # StatTile, MonthlyQuotesChart
+    UploadCard.tsx / FlightList.tsx / PreviewPanel.tsx   # motor de extração/preview original
   lib/
-    types.ts                    # tipos compartilhados
-    schema.ts                    # schema Zod da extração
-    format.ts                    # formatação de moeda/data/CNPJ
-    whatsapp.ts                   # geração do texto para WhatsApp
+    types.ts                    # tipos do motor de voo/PDF (QuoteItem, AgencyInfo)
+    store/                      # "banco local": AppDataContext + types (AgencySettings, Client, Quote, TeamMember)
+    schema.ts                   # schema Zod da extração
+    format.ts                   # formatação de moeda/data/CNPJ
+    whatsapp.ts                 # geração do texto para WhatsApp
     pdf/
-      buildFlightQuoteData.ts     # mapeia QuoteItem[]+AgencyInfo -> dados do PDF
-      renderFlightQuoteHtml.ts    # monta o HTML (reaproveita style.css/flight-quote.css)
-      renderPdf.ts                 # HTML -> PDF via Puppeteer/Chromium
+      buildFlightQuoteData.ts   # mapeia QuoteItem[]+AgencyInfo -> dados do PDF
+      renderFlightQuoteHtml.ts  # monta o HTML (reaproveita style.css/flight-quote.css)
+      renderPdf.ts              # HTML -> PDF via Puppeteer/Chromium
+
+prisma/schema.prisma            # desenho do banco (Agency, Client, TeamMember, Quote, FlightOption,
+                                 # HotelStay) — NÃO conectado ainda, ver "Persistência" abaixo
 
 pdf-template/                   # deliverable standalone (Python/Jinja2/WeasyPrint)
-  template.html                  # layout genérico de pacote (referência CVC)
-  flight-quote.html              # mesmo design, versão de referência em Jinja2
-  style.css / flight-quote.css   # fonte única de verdade do design (usada pelos 2 pipelines)
-  generate_pdf.py
+  template.html / flight-quote.html / style.css / flight-quote.css / generate_pdf.py
 ```
+
+## Persistência: hoje local, schema pronto pra depois
+
+Não há banco de dados conectado. `src/lib/store/AppDataContext.tsx` guarda
+tudo em `localStorage`, com a mesma forma de uma API real
+(`list/get/create/update/remove`) — trocar por `fetch()` depois é mecânico.
+
+`prisma/schema.prisma` já tem o modelo relacional completo (Agency, Client,
+TeamMember, Quote, FlightOption, HotelStay) pronto pra quando alguém for
+conectar um banco de verdade (Postgres via Neon/Vercel Marketplace é o
+caminho natural). É só o arquivo de schema — nada em `src/` importa
+`@prisma/client`, e o pacote `prisma` não está instalado (adicionar como
+devDependency só quando for de fato conectar, pra não carregar dependências
+à toa).
 
 ## Como o PDF é gerado
 
 A API `/api/pdf`:
 
-1. Mapeia os itens selecionados + dados da agência (`buildFlightQuoteData.ts`).
+1. Mapeia os itens selecionados + dados da agência/cotação (`buildFlightQuoteData.ts`).
 2. Monta o HTML da cotação em JS (`renderFlightQuoteHtml.ts`), injetando os
    dados nas mesmas folhas de estilo (`pdf-template/style.css` +
    `flight-quote.css`) usadas pelo template Jinja2 — um único design
-   compartilhado pelos dois pipelines.
+   compartilhado pelos dois pipelines. Cores customizadas (Configurações)
+   entram como um `<style>` de override no final.
 3. Renderiza esse HTML em PDF com Chromium headless via Puppeteer
    (`renderPdf.ts`):
    - **Local (dev)**: usa o pacote `puppeteer` (baixa um Chromium compatível
@@ -110,12 +142,12 @@ Veja o README daquela pasta para instruções.
 
 ## CNPJ e Cadastur
 
-O campo CNPJ tem um botão "Buscar" que consulta a
+O campo CNPJ (em Configurações) tem um botão "Buscar" que consulta a
 [BrasilAPI](https://brasilapi.com.br/api/cnpj/v1/) (gratuita, sem chave) via
 `/api/cnpj` e preenche automaticamente nome, endereço e telefone da agência.
 O campo Cadastur é só um texto livre (número de registro no Ministério do
-Turismo) — não existe uma API pública estável para consultá-lo, então é
-preenchido manualmente. Ambos aparecem no cabeçalho do PDF quando informados.
+Turismo) — não existe uma API pública estável para consultá-lo. Ambos
+aparecem no cabeçalho do PDF quando informados.
 
 ## Segurança
 
@@ -130,6 +162,9 @@ preenchido manualmente. Ambos aparecem no cabeçalho do PDF quando informados.
   IA por terceiros. Isso não expõe a chave, mas é um vetor de abuso de custo.
   Antes de publicar o app para além de uso pessoal/local, vale adicionar
   rate limiting e/ou uma autenticação simples nessas rotas.
+- Os dados ficam só no `localStorage` do navegador de quem usa — não há
+  compartilhamento entre usuários/dispositivos nem backup automático
+  enquanto não houver um banco conectado.
 
 ## Deploy
 

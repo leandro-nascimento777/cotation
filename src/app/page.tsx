@@ -1,135 +1,179 @@
 "use client";
 
-import { useState } from "react";
-import { UploadCard } from "@/components/UploadCard";
-import { FlightList } from "@/components/FlightList";
-import { AgencyForm } from "@/components/AgencyForm";
-import { PreviewPanel } from "@/components/PreviewPanel";
-import { AgencyInfo, defaultAgencyInfo, FlightRow, flightRowsToQuoteItems, QuoteItem } from "@/lib/types";
-import { PlaneTakeoff, Trash2 } from "lucide-react";
+import { useMemo } from "react";
+import Link from "next/link";
+import { useAppData } from "@/lib/store/AppDataContext";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { EmptyState } from "@/components/shell/EmptyState";
+import { StatusBadge } from "@/components/shell/StatusBadge";
+import { StatTile } from "@/components/dashboard/StatTile";
+import { MonthlyQuotesChart, MonthlyPoint } from "@/components/dashboard/MonthlyQuotesChart";
+import { formatCurrencyBRL } from "@/lib/format";
+import { DollarSign, Percent, Plus, Receipt, Users } from "lucide-react";
 
-export default function Home() {
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [items, setItems] = useState<QuoteItem[]>([]);
-  const [agency, setAgency] = useState<AgencyInfo>(defaultAgencyInfo);
-  const [extractLoading, setExtractLoading] = useState(false);
-  const [extractError, setExtractError] = useState<string | null>(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
+const MONTH_LABEL = new Intl.DateTimeFormat("pt-BR", { month: "short" });
 
-  const handleExtract = async (imageDataUrl: string) => {
-    setImagePreview(imageDataUrl);
-    setExtractLoading(true);
-    setExtractError(null);
-    try {
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: imageDataUrl }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Falha ao extrair os dados.");
-      const rows: FlightRow[] = data.rows;
-      setItems(flightRowsToQuoteItems(rows));
-    } catch (err) {
-      setExtractError(err instanceof Error ? err.message : "Erro desconhecido.");
-      setItems([]);
-    } finally {
-      setExtractLoading(false);
+function monthKey(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth()}`;
+}
+
+export default function DashboardPage() {
+  const { quotes, clients, hydrated } = useAppData();
+
+  const metrics = useMemo(() => {
+    const now = new Date();
+    const currentKey = monthKey(now);
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevKey = monthKey(prevDate);
+
+    const quotesThisMonth = quotes.filter((q) => monthKey(new Date(q.createdAt)) === currentKey);
+    const quotesPrevMonth = quotes.filter((q) => monthKey(new Date(q.createdAt)) === prevKey);
+    const approvedThisMonth = quotesThisMonth.filter((q) => q.status === "APROVADA");
+    const approvedPrevMonth = quotesPrevMonth.filter((q) => q.status === "APROVADA");
+
+    const vendasMes = approvedThisMonth.reduce((sum, q) => sum + (q.valorTotal || 0), 0);
+    const conversionThisMonth = quotesThisMonth.length
+      ? (approvedThisMonth.length / quotesThisMonth.length) * 100
+      : 0;
+    const conversionPrevMonth = quotesPrevMonth.length
+      ? (approvedPrevMonth.length / quotesPrevMonth.length) * 100
+      : 0;
+
+    const chart: MonthlyPoint[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = monthKey(d);
+      const gerados = quotes.filter((q) => monthKey(new Date(q.createdAt)) === key).length;
+      const fechados = quotes.filter(
+        (q) => q.status === "APROVADA" && monthKey(new Date(q.updatedAt)) === key
+      ).length;
+      chart.push({ label: MONTH_LABEL.format(d), gerados, fechados });
     }
-  };
 
-  const handleClear = () => {
-    setImagePreview(null);
-    setItems([]);
-    setExtractError(null);
-    setPdfError(null);
-  };
+    return {
+      vendasMes,
+      countMes: quotesThisMonth.length,
+      conversionThisMonth,
+      deltaConversion: conversionThisMonth - conversionPrevMonth,
+      chart,
+    };
+  }, [quotes]);
 
-  const handleToggle = (rowId: string, fareId: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.rowId === rowId && item.fareId === fareId
-          ? { ...item, selected: !item.selected }
-          : item
-      )
-    );
-  };
+  const recentQuotes = useMemo(
+    () => [...quotes].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5),
+    [quotes]
+  );
+  const recentClients = useMemo(
+    () => [...clients].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5),
+    [clients]
+  );
+  const clientName = (id: string | null) => (id ? clients.find((c) => c.id === id)?.nomeCompleto : undefined);
 
-  const handleDownloadPdf = async () => {
-    setPdfLoading(true);
-    setPdfError(null);
-    try {
-      const res = await fetch("/api/pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, agency }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Falha ao gerar PDF.");
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "orcamento.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setPdfError(err instanceof Error ? err.message : "Erro desconhecido.");
-    } finally {
-      setPdfLoading(false);
-    }
-  };
+  if (!hydrated) {
+    return <div className="flex h-full items-center justify-center py-24 text-sm text-slate-400">Carregando…</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-600">
-            <PlaneTakeoff className="h-5 w-5 text-white" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-slate-900">Gerador de Orçamento</h1>
-            <p className="text-xs text-slate-500">Print de voos → orçamento pronto para WhatsApp e PDF</p>
-          </div>
-          {imagePreview || items.length > 0 ? (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
-            >
-              <Trash2 className="h-3.5 w-3.5" /> Limpar orçamento
-            </button>
-          ) : null}
-        </div>
-      </header>
+    <div>
+      <PageHeader
+        title="Dashboard"
+        description="Visão geral das cotações e vendas da agência."
+        action={
+          <Link
+            href="/cotacoes/nova"
+            className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+          >
+            <Plus className="h-4 w-4" /> Nova cotação
+          </Link>
+        }
+      />
 
-      <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-2">
-        <div className="flex flex-col gap-6">
-          <UploadCard
-            onExtract={handleExtract}
-            loading={extractLoading}
-            error={extractError}
-            previewUrl={imagePreview}
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        {quotes.length === 0 ? (
+          <EmptyState
+            icon={Receipt}
+            title="Ainda sem dados para mostrar"
+            description="Assim que você criar cotações, as métricas de vendas e conversão aparecem aqui."
+            action={
+              <Link
+                href="/cotacoes/nova"
+                className="mt-2 flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+              >
+                <Plus className="h-4 w-4" /> Nova cotação
+              </Link>
+            }
           />
-          {items.length > 0 && <FlightList items={items} onToggle={handleToggle} />}
-          <AgencyForm agency={agency} onChange={setAgency} />
-        </div>
+        ) : (
+          <>
+            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <StatTile label="Vendas no mês" value={formatCurrencyBRL(metrics.vendasMes)} icon={DollarSign} />
+              <StatTile label="Orçamentos no mês" value={String(metrics.countMes)} icon={Receipt} />
+              <StatTile
+                label="Taxa de conversão"
+                value={`${metrics.conversionThisMonth.toFixed(0)}%`}
+                icon={Percent}
+                delta={metrics.deltaConversion}
+              />
+            </div>
 
-        <div className="lg:sticky lg:top-6 lg:self-start">
-          <PreviewPanel
-            items={items}
-            agency={agency}
-            onDownloadPdf={handleDownloadPdf}
-            pdfLoading={pdfLoading}
-            pdfError={pdfError}
-          />
-        </div>
-      </main>
+            <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <h2 className="mb-4 text-sm font-semibold text-slate-700">Últimos 6 meses</h2>
+              <MonthlyQuotesChart data={metrics.chart} />
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <section>
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-slate-700">Últimas cotações</h2>
+                  <Link href="/cotacoes" className="text-xs font-medium text-teal-700 hover:underline">
+                    Ver todas
+                  </Link>
+                </div>
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                  {recentQuotes.map((quote) => (
+                    <Link
+                      key={quote.id}
+                      href={`/cotacoes/${quote.id}`}
+                      className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5 text-sm last:border-0 hover:bg-slate-50"
+                    >
+                      <div>
+                        <p className="font-mono text-xs font-semibold text-slate-800">{quote.numero}</p>
+                        <p className="text-xs text-slate-400">{clientName(quote.clientId) || quote.destino || "—"}</p>
+                      </div>
+                      <StatusBadge status={quote.status} />
+                    </Link>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <div className="mb-2 flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-slate-700">Clientes recentes</h2>
+                  <Link href="/clientes" className="text-xs font-medium text-teal-700 hover:underline">
+                    Ver todos
+                  </Link>
+                </div>
+                {recentClients.length === 0 ? (
+                  <EmptyState icon={Users} title="Nenhum cliente ainda" description="Cadastre clientes para vinculá-los às cotações." />
+                ) : (
+                  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    {recentClients.map((client) => (
+                      <Link
+                        key={client.id}
+                        href={`/clientes/${client.id}`}
+                        className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5 text-sm last:border-0 hover:bg-slate-50"
+                      >
+                        <span className="font-medium text-slate-800">{client.nomeCompleto}</span>
+                        <span className="text-xs text-slate-400">{client.cidade || client.telefone || ""}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -12,6 +12,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const items: QuoteItem[] = body?.items || [];
     const agency: AgencyInfo = body?.agency;
+    const numeroOrcamento: string | undefined = body?.numeroOrcamento || undefined;
+    const corPrimaria: string | undefined = body?.corPrimaria || undefined;
+    const corSecundaria: string | undefined = body?.corSecundaria || undefined;
+    const corTexto: string | undefined = body?.corTexto || undefined;
 
     if (!agency) {
       return NextResponse.json({ error: "Dados da agência ausentes." }, { status: 400 });
@@ -23,7 +27,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const data = buildFlightQuoteData(items, agency);
+    const data = buildFlightQuoteData(items, agency, {
+      numeroOrcamento,
+      corPrimaria,
+      corSecundaria,
+      corTexto,
+    });
     const html = await renderFlightQuoteHtml(data);
     const pdfBuffer = await renderHtmlToPdf(html);
 

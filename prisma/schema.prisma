@@ -1,0 +1,213 @@
+// Schema Prisma — ESQUEMATIZADO PARA CONEXÃO FUTURA.
+//
+// Este arquivo não está conectado a nenhum banco real ainda: é só o
+// desenho do modelo de dados para quando a persistência for ligada de
+// verdade (hoje o app usa Context + localStorage, ver
+// src/lib/store/AppDataContext.tsx). Nada em src/ importa @prisma/client.
+//
+// Recomendado: Postgres (ex: Neon via Vercel Marketplace) quando conectar.
+// generator/datasource abaixo são só a configuração padrão pra isso.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Dados da agência. Hoje só existe 1 registro (sem multi-tenant/login);
+/// o modelo já fica separado pra permitir evoluir pra várias agências
+/// (ex: adicionando um model User com agencyId) sem redesenhar tudo.
+model Agency {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Identificação
+  razaoSocial String
+  nomeFantasia String?
+  cnpj        String?
+  cadastur    String?
+  site        String?
+  logoUrl     String? // data URL ou URL pública
+
+  // Endereço / contato da agência
+  endereco String?
+  telefone String?
+  email    String?
+
+  // Vendedor padrão — pré-preenche cotações novas (pode ser sobrescrito
+  // por cotação via Quote.sellerName/Email/Phone)
+  vendedorPadraoNome     String?
+  vendedorPadraoEmail    String?
+  vendedorPadraoTelefone String?
+
+  // Numeração de orçamento (ex: prefixo "ORC" + próximo número -> ORC-2026-000042)
+  orcamentoPrefixo     String @default("ORC")
+  proximoOrcamentoNumero Int  @default(1)
+
+  // Identidade visual do PDF — nulo = usa o padrão do sistema
+  pdfCorPrimaria    String?
+  pdfCorSecundaria  String?
+  pdfCorTexto       String?
+  pdfUsarLogoAgencia Boolean @default(true)
+
+  clients     Client[]
+  quotes      Quote[]
+  teamMembers TeamMember[]
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id])
+
+  nome     String
+  cargo    String? // ex: "Vendedor(a)", "Gerente", "Atendimento"
+  email    String?
+  telefone String?
+  ativo    Boolean @default(true)
+
+  quotes Quote[]
+
+  @@index([agencyId])
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id])
+
+  nomeCompleto String
+  cpf          String?
+  email        String?
+  telefone     String?
+  endereco     String?
+  cidade       String?
+  observacoes  String?
+
+  quotes Quote[]
+
+  @@index([agencyId])
+}
+
+enum QuoteType {
+  VOO
+  HOTEL
+  PACOTE
+}
+
+enum QuoteStatus {
+  RASCUNHO
+  ENVIADA
+  APROVADA
+  RECUSADA
+  EXPIRADA
+}
+
+enum PaymentMethod {
+  AVISTA
+  CARTAO_PARCELADO
+  BOLETO
+  OUTRO
+}
+
+model Quote {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id])
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  numero String // ex: "ORC-2026-000042"
+  type   QuoteType @default(VOO) // hoje só VOO é ativo na UI
+
+  // Pessoa da Equipe responsável por esta cotação (opcional — cotações
+  // antigas ou sem equipe cadastrada usam só os campos snapshot abaixo)
+  responsavelId String?
+  responsavel   TeamMember? @relation(fields: [responsavelId], references: [id])
+
+  // Snapshot do vendedor no momento da cotação — pode divergir do cadastro
+  // atual em TeamMember/Agency (ex: pessoa saiu da equipe depois)
+  sellerName     String?
+  sellerEmail    String?
+  sellerPhone    String?
+
+  destino          String?
+  periodoInicio    DateTime?
+  periodoFim       DateTime?
+  paymentMethod    PaymentMethod?
+  validityDays     Int      @default(3)
+  mensagemDestaque String?
+  observacoes      String?
+  status           QuoteStatus @default(RASCUNHO)
+  valorTotal       Decimal? @db.Decimal(10, 2)
+
+  flightOptions FlightOption[]
+  hotelStays    HotelStay[] // reservado — só usado quando type != VOO
+
+  @@index([agencyId])
+  @@index([clientId])
+  @@index([status])
+}
+
+/// Uma opção de voo selecionada dentro de uma cotação (equivalente ao
+/// QuoteItem do front-end hoje, ver src/lib/types.ts).
+model FlightOption {
+  id      String @id @default(cuid())
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  airline       String
+  flightNumber  String
+  date          String
+  departureTime String
+  arrivalTime   String
+  duration      String
+  origin        String
+  destination   String
+  stops         Int
+  aircraft      String?
+  baggage       String // "sem" | "com"
+  fareLabel     String
+  fareClass     String?
+  price         Decimal @db.Decimal(10, 2)
+  currency      String  @default("BRL")
+  selected      Boolean @default(true)
+
+  @@index([quoteId])
+}
+
+/// Reservado para quando QuoteType.HOTEL/PACOTE forem ativados na UI —
+/// não populado hoje.
+model HotelStay {
+  id      String @id @default(cuid())
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  hotelNome     String
+  hotelEndereco String?
+  descricao     String?
+  categoria     String?
+
+  dataEntrada String?
+  dataSaida   String?
+  diarias     Int?
+  quartoNumero Int?
+  tipoQuarto  String?
+  alimentacao String?
+
+  @@index([quoteId])
+}
