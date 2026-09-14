@@ -1,67 +1,117 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { UploadCard } from "@/components/UploadCard";
+import { FlightList } from "@/components/FlightList";
+import { AgencyForm } from "@/components/AgencyForm";
+import { PreviewPanel } from "@/components/PreviewPanel";
+import { AgencyInfo, defaultAgencyInfo, FlightRow, flightRowsToQuoteItems, QuoteItem } from "@/lib/types";
+import { PlaneTakeoff } from "lucide-react";
 
 export default function Home() {
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [items, setItems] = useState<QuoteItem[]>([]);
+  const [agency, setAgency] = useState<AgencyInfo>(defaultAgencyInfo);
+  const [extractLoading, setExtractLoading] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+
+  const handleExtract = async (imageDataUrl: string) => {
+    setImagePreview(imageDataUrl);
+    setExtractLoading(true);
+    setExtractError(null);
+    try {
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: imageDataUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Falha ao extrair os dados.");
+      const rows: FlightRow[] = data.rows;
+      setItems(flightRowsToQuoteItems(rows));
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : "Erro desconhecido.");
+      setItems([]);
+    } finally {
+      setExtractLoading(false);
+    }
+  };
+
+  const handleToggle = (rowId: string, fareId: string) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.rowId === rowId && item.fareId === fareId
+          ? { ...item, selected: !item.selected }
+          : item
+      )
+    );
+  };
+
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    setPdfError(null);
+    try {
+      const res = await fetch("/api/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items, agency }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Falha ao gerar PDF.");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "orcamento.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setPdfError(err instanceof Error ? err.message : "Erro desconhecido.");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-slate-50">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-600">
+            <PlaneTakeoff className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-slate-900">Gerador de Orçamento</h1>
+            <p className="text-xs text-slate-500">Print de voos → orçamento pronto para WhatsApp e PDF</p>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </header>
+
+      <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-2">
+        <div className="flex flex-col gap-6">
+          <UploadCard
+            onExtract={handleExtract}
+            loading={extractLoading}
+            error={extractError}
+            previewUrl={imagePreview}
+          />
+          {items.length > 0 && <FlightList items={items} onToggle={handleToggle} />}
+          <AgencyForm agency={agency} onChange={setAgency} />
+        </div>
+
+        <div className="lg:sticky lg:top-6 lg:self-start">
+          <PreviewPanel
+            items={items}
+            agency={agency}
+            onDownloadPdf={handleDownloadPdf}
+            pdfLoading={pdfLoading}
+            pdfError={pdfError}
+          />
         </div>
       </main>
     </div>
