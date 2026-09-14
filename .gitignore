@@ -40,3 +40,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# pdf-template (Python)
+pdf-template/.venv/
+pdf-template/__pycache__/
+pdf-template/*.pyc
+pdf-template/*.pdf
