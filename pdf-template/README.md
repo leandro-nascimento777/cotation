@@ -5,21 +5,40 @@ CVC), **100% parametrizado**: nenhum texto ou valor fica fixo no HTML — tudo
 vem de um JSON de dados. A logo também é substituível (upload/arquivo local
 ou URL).
 
+Tem dois templates prontos:
+
+- **`template.html`** — o layout genérico de pacote completo (voos + hotel),
+  fiel ao modelo de referência CVC. Uso standalone via `generate_pdf.py`.
+- **`flight-quote.html`** — layout mais enxuto (cabeçalho + banner + cards de
+  opções de voo com preço), reaproveitando as mesmas variáveis de marca e o
+  mesmo cabeçalho. É o template usado pelo app Next.js (`/api/pdf` chama este
+  script apontando `--template flight-quote.html`) — ver `src/lib/pdf/buildFlightQuoteData.ts`
+  no projeto raiz para o mapeamento de dados.
+
+Os dois compartilham `style.css` e os partials de cabeçalho
+(`partials/header.html`, `partials/linha_data.html`), então uma troca de cor
+de marca ou de logo vale para ambos.
+
 ## Stack
 
 - **HTML + CSS** — layout e estilo (fidelidade visual pixel-a-pixel).
-- **Jinja2** — popula o `template.html` com os dados do JSON.
+- **Jinja2** — popula os templates com os dados do JSON (com `{% include %}`
+  para os trechos compartilhados).
 - **WeasyPrint** — renderiza o HTML+CSS final em PDF.
 
 ## Arquivos
 
-| Arquivo             | Papel                                                             |
-| -------------------- | ------------------------------------------------------------------ |
-| `template.html`      | Layout com placeholders `{{ variavel }}` e loops `{% for %}`      |
-| `style.css`          | Todo o estilo, com as cores de marca em variáveis CSS (`:root`)   |
-| `data_schema.json`   | Exemplo de dados já preenchido (dados do orçamento de referência) |
-| `generate_pdf.py`    | Script que injeta os dados no template e exporta o PDF            |
-| `requirements.txt`   | Dependências Python (`jinja2`, `weasyprint`)                      |
+| Arquivo                        | Papel                                                             |
+| ------------------------------- | ------------------------------------------------------------------ |
+| `template.html`                 | Layout de pacote completo, com placeholders `{{ variavel }}` e loops `{% for %}` |
+| `flight-quote.html`             | Layout de cotação de voos (usado pelo app Next.js)                |
+| `partials/header.html`          | Cabeçalho compartilhado (logo + dados da agência)                 |
+| `partials/linha_data.html`      | Linha de data de emissão + número do orçamento                    |
+| `style.css`                     | Estilo base, com as cores de marca em variáveis CSS (`:root`)     |
+| `flight-quote.css`              | Estilo adicional específico do `flight-quote.html` (cards de voo) |
+| `data_schema.json`              | Exemplo de dados já preenchido (dados do orçamento de referência) |
+| `generate_pdf.py`               | Script que injeta os dados num template e exporta o PDF (`--template`) |
+| `requirements.txt`              | Dependências Python (`jinja2`, `weasyprint`)                      |
 
 ## Instalação
 
@@ -59,6 +78,12 @@ Especificar outro JSON de dados e/ou nome de saída:
 
 ```bash
 python generate_pdf.py --data meu_orcamento.json --output orcamento-cliente.pdf
+```
+
+Usar o template de cotação de voos (o mesmo que o app Next.js chama):
+
+```bash
+python generate_pdf.py --data meu_orcamento_voos.json --template flight-quote.html
 ```
 
 ## Como trocar a logo

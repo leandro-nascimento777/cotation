@@ -8,34 +8,10 @@
 <body>
 
   <!-- ============ 1. CABEÇALHO ============ -->
-  <header class="header">
-    <div class="header-left">
-      {% if logo_url %}
-        <img src="{{ logo_url }}" alt="Logo da agência" class="logo">
-      {% else %}
-        <div class="logo-placeholder">LOGO</div>
-      {% endif %}
-    </div>
-    <div class="header-center">
-      <p class="agencia-nome">{{ agencia_nome }}</p>
-      <p>{{ agencia_endereco_linha1 }}</p>
-      <p>{{ agencia_endereco_linha2 }}</p>
-      <p>{{ agencia_endereco_linha3 }}</p>
-      <p>{{ agencia_cep }}</p>
-    </div>
-    <div class="header-right">
-      <p><span class="label">Filial:</span> {{ filial_numero }}</p>
-      <p><span class="label">Vendedor:</span> {{ vendedor_nome }}</p>
-      <p><span class="label">Email:</span> {{ vendedor_email }}</p>
-      <p><span class="label">Fone:</span> {{ telefone }}</p>
-    </div>
-  </header>
+  {% include "partials/header.html" %}
 
   <!-- ============ 2. DATA / Nº DO ORÇAMENTO ============ -->
-  <div class="linha-data">
-    <span>{{ data_emissao }}</span>
-    <span>Orçamento nº <strong>{{ numero_orcamento }}</strong></span>
-  </div>
+  {% include "partials/linha_data.html" %}
 
   <!-- ============ 3. BANNER AMARELO ============ -->
   {% if empresa_nome_banner %}

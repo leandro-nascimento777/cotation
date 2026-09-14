@@ -7,7 +7,7 @@ import { FlightRow } from "@/lib/types";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
 const EXTRACTION_PROMPT = `Você é um extrator de dados especializado em telas de sistemas de emissão de \
 passagens aéreas usadas por agências de viagem no Brasil.

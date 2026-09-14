@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.69",
-    "@react-pdf/renderer": "^4.9.0",
     "ai": "^7.0.99",
     "clsx": "^2.1.1",
     "lucide-react": "^1.46.0",

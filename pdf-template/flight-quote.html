@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Orçamento {{ numero_orcamento }}</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="flight-quote.css">
+</head>
+<body>
+
+  <!-- ============ CABEÇALHO (compartilhado com template.html) ============ -->
+  {% include "partials/header.html" %}
+
+  <!-- ============ DATA / Nº DO ORÇAMENTO ============ -->
+  {% include "partials/linha_data.html" %}
+
+  <!-- ============ BANNER AMARELO ============ -->
+  {% if empresa_nome_banner %}
+  <div class="banner-destaque">
+    <p>{{ empresa_nome_banner }}</p>
+  </div>
+  {% endif %}
+
+  <!-- ============ OPÇÕES DE VOO ============ -->
+  <section class="secao">
+    <h2 class="titulo-secao">
+      <span class="icone">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2.5 1.8V22l3.5-1 3.5 1v-1.2L12 19v-5.5l9 2.5z"/>
+        </svg>
+      </span>
+      Opções de Voo{% if opcoes|length > 1 %} ({{ opcoes|length }}){% endif %}
+    </h2>
+
+    {% if not opcoes %}
+      <p style="font-size: 10px; color: var(--cor-texto-suave);">Nenhuma opção selecionada.</p>
+    {% endif %}
+
+    {% for opcao in opcoes %}
+    <div class="voo-card">
+      <div class="voo-card-header">
+        <span>Opção {{ loop.index }} · {{ opcao.cia_aerea }} {{ opcao.numero_voo }} · {{ opcao.data }}</span>
+        <span class="voo-card-preco">{{ opcao.valor }}</span>
+      </div>
+      <div class="voo-card-body">
+        <div class="voo-rota">
+          <div class="voo-rota-origem">
+            <p class="voo-aeroporto">{{ opcao.origem }}</p>
+            <p class="voo-horario">Partida {{ opcao.hora_partida }}</p>
+          </div>
+          <span class="voo-seta">&#9644;&#9644;&#9644;&#9644;&#9654;</span>
+          <div class="voo-rota-destino">
+            <p class="voo-aeroporto">{{ opcao.destino }}</p>
+            <p class="voo-horario">Chegada {{ opcao.hora_chegada }}</p>
+          </div>
+        </div>
+        <div class="voo-meta">
+          <span>Duração: <strong>{{ opcao.duracao }}</strong></span>
+          <span>Conexões: <strong>{{ opcao.conexoes }}</strong></span>
+          {% if opcao.equipamento %}<span>Equip.: <strong>{{ opcao.equipamento }}</strong></span>{% endif %}
+          <span>Bagagem: <strong>{{ opcao.bagagem_label }} ({{ opcao.tarifa_label }})</strong></span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% if valor_a_partir %}
+    <div class="valor-a-partir-box">
+      <span style="font-size: 10px; color: var(--cor-texto-suave);">Valor a partir de</span>
+      <span class="valor-a-partir-valor">{{ valor_a_partir }}</span>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- ============ INFORMAÇÕES IMPORTANTES ============ -->
+  {% if informacoes_importantes %}
+  <section class="secao secao-final">
+    <h2 class="titulo-secao">Informações importantes</h2>
+    <div class="texto-livre">{{ informacoes_importantes | nl2br }}</div>
+  </section>
+  {% endif %}
+
+  <footer class="rodape">
+    <span>{{ agencia_nome }}</span>
+    <span>{{ data_emissao }}</span>
+  </footer>
+
+</body>
+</html>

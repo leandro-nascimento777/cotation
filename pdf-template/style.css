@@ -40,18 +40,23 @@ p {
 
 /* ---------- Cabeçalho ---------- */
 
+/* Observação: o cabeçalho usa "display: table" (não flexbox) de propósito.
+   O motor do WeasyPrint tem um bug de flexbox que sobrepõe os itens quando
+   um deles (a caixa de logo, com altura fixa) é bem mais alto que o outro
+   (poucas linhas de texto). Layout de tabela é robusto para esse caso. */
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
   border-bottom: 2px solid var(--cor-primaria);
   padding-bottom: 8px;
   margin-bottom: 8px;
 }
 
 .header-left {
-  flex: 0 0 auto;
+  display: table-cell;
+  width: 140px;
+  vertical-align: top;
 }
 
 .logo {
@@ -75,7 +80,9 @@ p {
 }
 
 .header-center {
-  flex: 1 1 auto;
+  display: table-cell;
+  vertical-align: top;
+  padding: 0 12px;
   font-size: 9px;
   color: var(--cor-texto-suave);
 }
@@ -88,7 +95,9 @@ p {
 }
 
 .header-right {
-  flex: 0 0 auto;
+  display: table-cell;
+  width: 230px;
+  vertical-align: top;
   text-align: right;
   font-size: 9px;
   color: var(--cor-texto-suave);

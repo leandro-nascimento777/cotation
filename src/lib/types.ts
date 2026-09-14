@@ -59,6 +59,7 @@ export interface AgencyInfo {
   phone: string;
   message: string; // texto do banner amarelo / mensagem de agradecimento
   notes: string; // observações importantes (rodapé)
+  logoDataUrl: string; // logo da agência (data URL), opcional — vazio = placeholder "LOGO" no PDF
 }
 
 export const defaultAgencyInfo: AgencyInfo = {
@@ -69,6 +70,7 @@ export const defaultAgencyInfo: AgencyInfo = {
   phone: "",
   message: "Agradecemos a preferência! Seguem as opções de voo selecionadas para sua viagem.",
   notes: "Valores sujeitos a disponibilidade e alteração sem aviso prévio até a confirmação da reserva.",
+  logoDataUrl: "",
 };
 
 export function flightRowsToQuoteItems(rows: FlightRow[]): QuoteItem[] {

@@ -17,10 +17,21 @@ export function quoteNumber(date = new Date()): string {
 }
 
 export function formatDatePtBR(date = new Date()): string {
-  return date.toLocaleDateString("pt-BR", {
+  const formatted = date.toLocaleDateString("pt-BR", {
     weekday: "long",
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
+  // "segunda-feira, 30 de agosto..." -> "Segunda-Feira, 30 de agosto..."
+  // (capitaliza só o dia da semana, como no modelo de referência; funciona
+  // tanto para dias com hífen quanto "sábado"/"domingo")
+  const commaIndex = formatted.indexOf(",");
+  if (commaIndex === -1) return formatted;
+  const weekday = formatted
+    .slice(0, commaIndex)
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join("-");
+  return weekday + formatted.slice(commaIndex);
 }

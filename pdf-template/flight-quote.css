@@ -1,0 +1,109 @@
+/* ==========================================================================
+   flight-quote.css — estilos específicos da cotação de voos (usada pelo
+   app Next.js). Reaproveita as variáveis de marca definidas em style.css
+   (--cor-primaria, --cor-primaria-clara, --cor-borda, --cor-texto-suave) —
+   importe sempre style.css ANTES deste arquivo.
+   ========================================================================== */
+
+.voo-card {
+  border: 1px solid var(--cor-borda);
+  border-radius: 3px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  page-break-inside: avoid;
+}
+
+.voo-card-header {
+  background: var(--cor-primaria);
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.voo-card-preco {
+  font-size: 12px;
+}
+
+.voo-card-body {
+  padding: 8px 10px;
+}
+
+.voo-rota {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.voo-rota-origem {
+  flex: 1;
+}
+
+.voo-rota-destino {
+  flex: 1;
+  text-align: right;
+}
+
+.voo-seta {
+  color: #9ca3af;
+  margin: 0 10px;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.voo-aeroporto {
+  font-size: 11px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.voo-horario {
+  font-size: 9px;
+  color: var(--cor-texto-suave);
+  margin: 0;
+}
+
+.voo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 6px;
+  border-top: 1px solid var(--cor-borda);
+  font-size: 8.5px;
+  color: var(--cor-texto-suave);
+}
+
+.voo-meta strong {
+  color: var(--cor-texto);
+}
+
+.valor-a-partir-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--cor-primaria-clara);
+  border: 1px solid var(--cor-borda);
+  border-radius: 3px;
+  padding: 8px 12px;
+  margin-top: 4px;
+  margin-bottom: 14px;
+}
+
+.valor-a-partir-valor {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--cor-primaria);
+}
+
+.rodape {
+  display: flex;
+  justify-content: space-between;
+  font-size: 7px;
+  color: #9ca3af;
+  border-top: 1px solid var(--cor-borda);
+  padding-top: 6px;
+  margin-top: 20px;
+}

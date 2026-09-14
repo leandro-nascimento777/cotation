@@ -67,7 +67,12 @@ def resolve_logo(path_or_url: str) -> str:
     return f"data:{mime};base64,{encoded}"
 
 
-def render_pdf(data_path: Path, output_path: Path, logo_override: str | None = None) -> None:
+def render_pdf(
+    data_path: Path,
+    output_path: Path,
+    logo_override: str | None = None,
+    template_name: str = "template.html",
+) -> None:
     data = json.loads(data_path.read_text(encoding="utf-8"))
 
     if logo_override:
@@ -76,7 +81,7 @@ def render_pdf(data_path: Path, output_path: Path, logo_override: str | None = N
 
     env = Environment(loader=FileSystemLoader(str(BASE_DIR)), autoescape=True)
     env.filters["nl2br"] = nl2br
-    template = env.get_template("template.html")
+    template = env.get_template(template_name)
 
     html_content = template.render(**data)
 
@@ -89,6 +94,7 @@ def main():
     parser.add_argument("--data", default="data_schema.json", help="Caminho do JSON com os dados (padrão: data_schema.json)")
     parser.add_argument("--output", default="orcamento.pdf", help="Caminho do PDF de saída (padrão: orcamento.pdf)")
     parser.add_argument("--logo", default=None, help="Caminho de um arquivo de logo local para sobrescrever o logo_url do JSON")
+    parser.add_argument("--template", default="template.html", help="Nome do arquivo de template a renderizar (padrão: template.html)")
     args = parser.parse_args()
 
     data_path = Path(args.data)
@@ -97,7 +103,7 @@ def main():
 
     output_path = Path(args.output)
 
-    render_pdf(data_path, output_path, args.logo)
+    render_pdf(data_path, output_path, args.logo, args.template)
 
 
 if __name__ == "__main__":

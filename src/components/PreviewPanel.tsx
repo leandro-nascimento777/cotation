@@ -87,31 +87,43 @@ export function PreviewPanel({ items, agency, onDownloadPdf, pdfLoading, pdfErro
 }
 
 /** Renderiza um preview visual aproximado (HTML) do PDF — o layout real e
- * definitivo é gerado no servidor via @react-pdf/renderer. */
+ * definitivo é gerado pelo template Jinja2 + WeasyPrint em pdf-template/
+ * (ver src/lib/pdf/buildFlightQuoteData.ts e /api/pdf). As cores aqui
+ * espelham as variáveis --cor-primaria/--cor-destaque do style.css. */
 function PdfMockPreview({ items, agency }: { items: QuoteItem[]; agency: AgencyInfo }) {
   const minPrice = items.length ? Math.min(...items.map((i) => i.price)) : 0;
   return (
     <div className="max-h-[520px] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
       <div className="mx-auto w-full max-w-[480px] bg-white p-5 text-[11px] shadow-sm">
-        <div className="flex items-start justify-between border-b-2 border-[#0f4c5c] pb-2">
-          <div>
-            <p className="text-lg font-bold text-[#0f4c5c]">{agency.agencyName || "Agência de Viagens"}</p>
-            {agency.branch ? <p className="text-[10px] text-slate-500">{agency.branch}</p> : null}
+        <div className="flex items-start justify-between border-b-2 border-[#1b4f8c] pb-2">
+          <div className="flex items-start gap-2">
+            {agency.logoDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={agency.logoDataUrl} alt="Logo" className="h-10 w-16 object-contain" />
+            ) : (
+              <div className="flex h-10 w-16 shrink-0 items-center justify-center rounded border border-dashed border-slate-300 text-[7px] font-bold text-slate-400">
+                LOGO
+              </div>
+            )}
+            <div>
+              <p className="text-lg font-bold text-[#1b4f8c]">{agency.agencyName || "Agência de Viagens"}</p>
+              {agency.branch ? <p className="text-[10px] text-slate-500">{agency.branch}</p> : null}
+            </div>
           </div>
           <div className="text-right text-[9px] text-slate-500">
             <p>Orçamento nº</p>
-            <p className="text-sm font-bold text-[#0f4c5c]">ORC-{new Date().getFullYear()}-XXXXXX</p>
+            <p className="text-sm font-bold text-[#1b4f8c]">ORC-{new Date().getFullYear()}-XXXXXX</p>
             <p>{[agency.sellerName, agency.phone, agency.email].filter(Boolean).join(" · ")}</p>
           </div>
         </div>
 
         {agency.message.trim() ? (
-          <div className="mt-3 rounded bg-[#e8b923] px-3 py-2 text-center text-[10px] font-bold text-[#3f2f00]">
+          <div className="mt-3 rounded bg-[#ffd400] px-3 py-2 text-center text-[10px] font-bold text-[#3a2e00]">
             {agency.message.trim()}
           </div>
         ) : null}
 
-        <p className="mt-3 mb-2 text-[11px] font-bold text-[#0f4c5c]">
+        <p className="mt-3 mb-2 text-[11px] font-bold text-[#1b4f8c]">
           Opções de Voo {items.length ? `(${items.length})` : ""}
         </p>
 
@@ -120,7 +132,7 @@ function PdfMockPreview({ items, agency }: { items: QuoteItem[]; agency: AgencyI
         ) : (
           items.map((item, idx) => (
             <div key={`${item.rowId}-${item.fareId}`} className="mb-2 overflow-hidden rounded border border-slate-200">
-              <div className="flex items-center justify-between bg-[#0f4c5c] px-2 py-1 text-white">
+              <div className="flex items-center justify-between bg-[#1b4f8c] px-2 py-1 text-white">
                 <span className="text-[9px] font-bold">
                   Opção {idx + 1} · {item.airline} {item.flightNumber} · {item.date}
                 </span>
@@ -151,7 +163,7 @@ function PdfMockPreview({ items, agency }: { items: QuoteItem[]; agency: AgencyI
         {items.length > 1 ? (
           <div className="mt-1 flex items-center justify-between rounded border border-slate-200 bg-slate-50 px-3 py-2">
             <span className="text-[10px] text-slate-600">Valor a partir de</span>
-            <span className="text-[13px] font-bold text-[#0f4c5c]">{formatCurrencyBRL(minPrice)}</span>
+            <span className="text-[13px] font-bold text-[#1b4f8c]">{formatCurrencyBRL(minPrice)}</span>
           </div>
         ) : null}
 
