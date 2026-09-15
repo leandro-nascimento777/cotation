@@ -219,11 +219,18 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         paymentMethod: original.paymentMethod,
         validityHours: original.validityHours,
         priority: original.priority,
+        adults: original.adults,
+        children: original.children,
+        infants: original.infants,
         mensagemDestaque: original.mensagemDestaque,
         observacoes: original.observacoes,
         valorTotal: original.valorTotal,
         flightItems: original.flightItems,
         status: "NOVA",
+        saleClosed: false,
+        closedIda: null,
+        closedVolta: null,
+        bookingRef: "",
       });
     },
     [quotes, createQuote]

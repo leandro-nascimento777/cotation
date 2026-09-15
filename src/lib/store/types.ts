@@ -15,7 +15,7 @@ export type QuoteStatusType =
   | "APROVADA";
 
 export const QUOTE_STATUS_LABEL: Record<QuoteStatusType, string> = {
-  NOVA: "Nova",
+  NOVA: "Cotações Criadas",
   EM_ATENDIMENTO: "Em Atendimento",
   PROPOSTA_ENVIADA: "Proposta Enviada",
   AGUARDANDO_CLIENTE: "Aguardando Cliente",
@@ -115,6 +115,14 @@ export interface Client {
 
 export type ClientDraft = Omit<Client, "id" | "createdAt">;
 
+/** Referência a um item específico de voo (QuoteItem) dentro de flightItems
+ * — usado pra registrar qual opção de ida/volta foi efetivamente
+ * comprada ao fechar a venda (ver Quote.closedIda/closedVolta). */
+export interface ClosedFlightSelection {
+  rowId: string;
+  fareId: string;
+}
+
 export interface Quote {
   id: string;
   createdAt: string;
@@ -131,12 +139,22 @@ export interface Quote {
   periodoFim: string;
   paymentMethod: PaymentMethodType | "";
   validityHours: number;
+  adults: number;
+  children: number;
+  infants: number;
   mensagemDestaque: string;
   observacoes: string;
   status: QuoteStatusType;
   priority: QuotePriorityType;
   valorTotal: number;
   flightItems: QuoteItem[];
+  /** true a partir do momento em que a venda é fechada (botão "Fechar
+   * venda" no card Aprovada) — só a partir daí a cotação conta como venda
+   * nas métricas do dashboard (ver src/app/page.tsx). */
+  saleClosed: boolean;
+  closedIda: ClosedFlightSelection | null;
+  closedVolta: ClosedFlightSelection | null;
+  bookingRef: string; // localizador da reserva
 }
 
 export type QuoteDraft = Omit<Quote, "id" | "createdAt" | "updatedAt" | "numero" | "status"> & {

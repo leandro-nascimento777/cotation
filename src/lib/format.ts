@@ -65,3 +65,43 @@ export function validityDateTimePtBR(hours: number, from = new Date()): string {
     minute: "2-digit",
   });
 }
+
+const MONTH_ABBR_PT: Record<string, string> = {
+  jan: "01",
+  fev: "02",
+  mar: "03",
+  abr: "04",
+  mai: "05",
+  jun: "06",
+  jul: "07",
+  ago: "08",
+  set: "09",
+  out: "10",
+  nov: "11",
+  dez: "12",
+};
+
+/** Converte uma data como veio do print extraído (ex: "18 Set" ou
+ * "25/09/26") pro formato "AAAA-MM-DD" esperado por <input type="date">.
+ * Retorna "" quando não reconhece o formato (o campo fica em branco pra
+ * preenchimento manual em vez de quebrar). */
+export function parseExtractedDateToISO(raw: string, now = new Date()): string {
+  const s = raw.trim().toLowerCase();
+  if (!s) return "";
+
+  const slash = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (slash) {
+    const [, d, m, y] = slash;
+    const year = y.length === 2 ? `20${y}` : y;
+    return `${year}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+
+  const named = s.match(/^(\d{1,2})\s+([a-zç]{3,})\.?$/);
+  if (named) {
+    const [, d, monthWord] = named;
+    const mm = MONTH_ABBR_PT[monthWord.slice(0, 3)];
+    if (mm) return `${now.getFullYear()}-${mm}-${d.padStart(2, "0")}`;
+  }
+
+  return "";
+}

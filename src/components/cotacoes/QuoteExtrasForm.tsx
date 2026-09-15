@@ -1,16 +1,19 @@
 "use client";
 
+import { useAppData } from "@/lib/store/AppDataContext";
 import {
   PAYMENT_METHOD_LABEL,
   PaymentMethodType,
   QUOTE_PRIORITY_LABEL,
   QuotePriorityType,
 } from "@/lib/store/types";
-import { ClientPicker } from "./ClientPicker";
 import { TeamMemberPicker } from "./TeamMemberPicker";
 
 export interface QuoteExtras {
   clientId: string | null;
+  clientName: string;
+  clientPhone: string;
+  clientEmail: string;
   responsavelId: string | null;
   sellerName: string;
   sellerEmail: string;
@@ -21,6 +24,9 @@ export interface QuoteExtras {
   paymentMethod: PaymentMethodType | "";
   validityHours: number;
   priority: QuotePriorityType;
+  adults: number;
+  children: number;
+  infants: number;
   mensagemDestaque: string;
   observacoes: string;
 }
@@ -32,6 +38,7 @@ function Field({
   placeholder,
   type = "text",
   textarea,
+  min,
 }: {
   label: string;
   value: string | number;
@@ -39,6 +46,7 @@ function Field({
   placeholder?: string;
   type?: string;
   textarea?: boolean;
+  min?: number;
 }) {
   return (
     <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
@@ -54,6 +62,7 @@ function Field({
       ) : (
         <input
           type={type}
+          min={min}
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
@@ -70,17 +79,49 @@ interface QuoteExtrasFormProps {
 }
 
 export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
+  const { clients } = useAppData();
   const set = <K extends keyof QuoteExtras>(key: K, value: QuoteExtras[K]) =>
     onChange({ ...extras, [key]: value });
+
+  const handleClientNameChange = (name: string) => {
+    const match = clients.find((c) => c.nomeCompleto.trim().toLowerCase() === name.trim().toLowerCase());
+    if (match) {
+      onChange({ ...extras, clientName: name, clientId: match.id, clientPhone: match.telefone, clientEmail: match.email });
+    } else {
+      onChange({ ...extras, clientName: name, clientId: null });
+    }
+  };
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <h2 className="mb-3 text-sm font-semibold text-slate-700">Dados da cotação</h2>
 
-      <div className="mb-3">
-        <label className="mb-1 block text-xs font-medium text-slate-600">Cliente</label>
-        <ClientPicker clientId={extras.clientId} onChange={(clientId) => set("clientId", clientId)} />
+      <div className="mb-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+          Nome do cliente
+          <input
+            list="quote-client-suggestions"
+            value={extras.clientName}
+            placeholder="Nome completo"
+            onChange={(e) => handleClientNameChange(e.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
+          />
+          <datalist id="quote-client-suggestions">
+            {clients.map((c) => (
+              <option key={c.id} value={c.nomeCompleto} />
+            ))}
+          </datalist>
+        </label>
+        <Field label="Telefone do cliente" value={extras.clientPhone} onChange={(v) => set("clientPhone", v)} />
+        <Field label="E-mail do cliente" value={extras.clientEmail} onChange={(v) => set("clientEmail", v)} />
       </div>
+      {extras.clientId ? (
+        <p className="mb-3 text-xs font-medium text-teal-700">✓ Cliente já cadastrado — dados preenchidos automaticamente.</p>
+      ) : extras.clientName.trim() ? (
+        <p className="mb-3 text-xs font-medium text-slate-500">Novo contato — será salvo automaticamente ao criar a cotação.</p>
+      ) : (
+        <div className="mb-3" />
+      )}
 
       <div className="mb-3">
         <label className="mb-1 block text-xs font-medium text-slate-600">Responsável (equipe)</label>
@@ -100,7 +141,7 @@ export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Vendedor(a)" value={extras.sellerName} onChange={(v) => set("sellerName", v)} />
-        <Field label="Telefone" value={extras.sellerPhone} onChange={(v) => set("sellerPhone", v)} />
+        <Field label="Telefone do responsável" value={extras.sellerPhone} onChange={(v) => set("sellerPhone", v)} />
         <Field label="E-mail" value={extras.sellerEmail} onChange={(v) => set("sellerEmail", v)} />
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
           Forma de pagamento
@@ -117,7 +158,12 @@ export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
             ))}
           </select>
         </label>
-        <Field label="Destino" value={extras.destino} onChange={(v) => set("destino", v)} placeholder="Ex: Belo Horizonte" />
+        <Field
+          label="Destino"
+          value={extras.destino}
+          onChange={(v) => set("destino", v)}
+          placeholder="Preenchido automaticamente a partir do print"
+        />
         <Field
           label="Validade da cotação (horas)"
           type="number"
@@ -138,8 +184,37 @@ export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
             ))}
           </select>
         </label>
-        <Field label="Período — ida" type="date" value={extras.periodoInicio} onChange={(v) => set("periodoInicio", v)} />
+        <Field
+          label="Período — ida"
+          type="date"
+          value={extras.periodoInicio}
+          onChange={(v) => set("periodoInicio", v)}
+        />
         <Field label="Período — volta" type="date" value={extras.periodoFim} onChange={(v) => set("periodoFim", v)} />
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-3">
+        <Field
+          label="Adultos"
+          type="number"
+          min={0}
+          value={extras.adults}
+          onChange={(v) => set("adults", Math.max(0, Number(v) || 0))}
+        />
+        <Field
+          label="Crianças"
+          type="number"
+          min={0}
+          value={extras.children}
+          onChange={(v) => set("children", Math.max(0, Number(v) || 0))}
+        />
+        <Field
+          label="Bebês"
+          type="number"
+          min={0}
+          value={extras.infants}
+          onChange={(v) => set("infants", Math.max(0, Number(v) || 0))}
+        />
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-3">

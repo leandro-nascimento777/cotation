@@ -10,14 +10,19 @@ import { QuoteTypeSelector } from "./QuoteTypeSelector";
 import { QuoteExtrasForm, QuoteExtras } from "./QuoteExtrasForm";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { buildAgencyInfoForQuote } from "@/lib/store/mergeAgencyInfo";
+import { resolveQuoteClientId } from "@/lib/store/resolveQuoteClient";
 import { Quote } from "@/lib/store/types";
 import { FlightRow, flightRowsToQuoteItems, QuoteItem } from "@/lib/types";
+import { parseExtractedDateToISO } from "@/lib/format";
 import { Send } from "lucide-react";
 
-function extrasFromQuote(quote: Quote | undefined, defaults: QuoteExtras): QuoteExtras {
+function extrasFromQuote(quote: Quote | undefined, defaults: QuoteExtras, client: { nomeCompleto: string; telefone: string; email: string } | undefined): QuoteExtras {
   if (!quote) return defaults;
   return {
     clientId: quote.clientId,
+    clientName: client?.nomeCompleto || "",
+    clientPhone: client?.telefone || "",
+    clientEmail: client?.email || "",
     responsavelId: quote.responsavelId,
     sellerName: quote.sellerName,
     sellerEmail: quote.sellerEmail,
@@ -28,6 +33,9 @@ function extrasFromQuote(quote: Quote | undefined, defaults: QuoteExtras): Quote
     paymentMethod: quote.paymentMethod,
     validityHours: quote.validityHours,
     priority: quote.priority,
+    adults: quote.adults,
+    children: quote.children,
+    infants: quote.infants,
     mensagemDestaque: quote.mensagemDestaque,
     observacoes: quote.observacoes,
   };
@@ -35,10 +43,13 @@ function extrasFromQuote(quote: Quote | undefined, defaults: QuoteExtras): Quote
 
 export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   const router = useRouter();
-  const { agency, createQuote, updateQuote } = useAppData();
+  const { agency, createQuote, updateQuote, getClient, createClient, updateClient } = useAppData();
 
   const defaults: QuoteExtras = {
     clientId: null,
+    clientName: "",
+    clientPhone: "",
+    clientEmail: "",
     responsavelId: null,
     sellerName: agency.sellerName,
     sellerEmail: agency.email,
@@ -49,14 +60,19 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
     paymentMethod: "",
     validityHours: 24,
     priority: "NORMAL",
+    adults: 1,
+    children: 0,
+    infants: 0,
     mensagemDestaque: "Agradecemos a preferência! Seguem as opções de voo selecionadas para sua viagem.",
     observacoes: "Valores sujeitos a disponibilidade e alteração sem aviso prévio até a confirmação da reserva.",
   };
 
+  const existingClient = existingQuote?.clientId ? getClient(existingQuote.clientId) : undefined;
+
   const [quoteId, setQuoteId] = useState<string | null>(existingQuote?.id || null);
   const [numero, setNumero] = useState<string>(existingQuote?.numero || "");
   const [items, setItems] = useState<QuoteItem[]>(existingQuote?.flightItems || []);
-  const [extras, setExtras] = useState<QuoteExtras>(extrasFromQuote(existingQuote, defaults));
+  const [extras, setExtras] = useState<QuoteExtras>(extrasFromQuote(existingQuote, defaults, existingClient));
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [extractLoading, setExtractLoading] = useState(false);
   const [extractError, setExtractError] = useState<string | null>(null);
@@ -77,6 +93,20 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
       if (!res.ok) throw new Error(data.error || "Falha ao extrair os dados.");
       const rows: FlightRow[] = data.rows;
       setItems(flightRowsToQuoteItems(rows));
+
+      const idaRow = rows.find((r) => r.ida);
+      const voltaRow = [...rows].reverse().find((r) => r.volta);
+      const passengers: { adults?: number; children?: number; infants?: number } | null = data.passengers ?? null;
+
+      setExtras((prev) => ({
+        ...prev,
+        destino: prev.destino || idaRow?.ida?.destination || voltaRow?.volta?.origin || prev.destino,
+        periodoInicio: prev.periodoInicio || (idaRow?.ida ? parseExtractedDateToISO(idaRow.ida.date) : prev.periodoInicio),
+        periodoFim: prev.periodoFim || (voltaRow?.volta ? parseExtractedDateToISO(voltaRow.volta.date) : prev.periodoFim),
+        adults: passengers?.adults ?? prev.adults,
+        children: passengers?.children ?? prev.children,
+        infants: passengers?.infants ?? prev.infants,
+      }));
     } catch (err) {
       setExtractError(err instanceof Error ? err.message : "Erro desconhecido.");
     } finally {
@@ -95,11 +125,14 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   /** Cria a cotação na primeira vez (atribuindo número) ou atualiza a
    * existente — devolve o {id, numero} atualizados. */
   const persist = (status?: Quote["status"]) => {
+    const clientId = resolveQuoteClientId(extras, { getClient, createClient, updateClient });
+    if (clientId !== extras.clientId) setExtras((prev) => ({ ...prev, clientId }));
+
     const selected = items.filter((i) => i.selected);
     const valorTotal = selected.length ? Math.min(...selected.map((i) => i.price)) : 0;
     const payload = {
       type: "VOO" as const,
-      clientId: extras.clientId,
+      clientId,
       responsavelId: extras.responsavelId,
       sellerName: extras.sellerName,
       sellerEmail: extras.sellerEmail,
@@ -110,10 +143,17 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
       paymentMethod: extras.paymentMethod,
       validityHours: extras.validityHours,
       priority: extras.priority,
+      adults: extras.adults,
+      children: extras.children,
+      infants: extras.infants,
       mensagemDestaque: extras.mensagemDestaque,
       observacoes: extras.observacoes,
       valorTotal,
       flightItems: items,
+      saleClosed: existingQuote?.saleClosed ?? false,
+      closedIda: existingQuote?.closedIda ?? null,
+      closedVolta: existingQuote?.closedVolta ?? null,
+      bookingRef: existingQuote?.bookingRef ?? "",
     };
     if (quoteId) {
       updateQuote(quoteId, status ? { ...payload, status } : payload);
@@ -178,6 +218,16 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
     router.push(`/cotacoes/${id}`);
   };
 
+  const handleCancel = () => {
+    router.push("/cotacoes");
+  };
+
+  const handleCreate = () => {
+    persist();
+    toast.success("Cotação criada.");
+    router.push("/cotacoes");
+  };
+
   const agencyInfoPreview = buildAgencyInfoForQuote(agency, extras);
 
   return (
@@ -193,23 +243,42 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
 
         <QuoteExtrasForm extras={extras} onChange={setExtras} />
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={handleSaveDraft}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-          >
-            Salvar rascunho
-          </button>
-          {quoteId ? (
-            <button
-              type="button"
-              onClick={handleMarkSent}
-              className="flex items-center gap-1.5 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900"
-            >
-              <Send className="h-4 w-4" /> Marcar como enviada
-            </button>
-          ) : null}
+        <div className="flex flex-wrap justify-end gap-2">
+          {existingQuote ? (
+            <>
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Salvar rascunho
+              </button>
+              <button
+                type="button"
+                onClick={handleMarkSent}
+                className="flex items-center gap-1.5 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900"
+              >
+                <Send className="h-4 w-4" /> Marcar como enviada
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleCreate}
+                className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+              >
+                Criar cotação
+              </button>
+            </>
+          )}
         </div>
       </div>
 

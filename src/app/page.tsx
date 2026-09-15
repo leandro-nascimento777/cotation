@@ -29,8 +29,10 @@ export default function DashboardPage() {
 
     const quotesThisMonth = quotes.filter((q) => monthKey(new Date(q.createdAt)) === currentKey);
     const quotesPrevMonth = quotes.filter((q) => monthKey(new Date(q.createdAt)) === prevKey);
-    const approvedThisMonth = quotesThisMonth.filter((q) => q.status === "APROVADA");
-    const approvedPrevMonth = quotesPrevMonth.filter((q) => q.status === "APROVADA");
+    // Só conta como venda a partir do "Fechar venda" (ver QuoteDetailModal),
+    // não só por chegar na coluna Aprovada do board.
+    const approvedThisMonth = quotesThisMonth.filter((q) => q.saleClosed);
+    const approvedPrevMonth = quotesPrevMonth.filter((q) => q.saleClosed);
 
     const vendasMes = approvedThisMonth.reduce((sum, q) => sum + (q.valorTotal || 0), 0);
     const conversionThisMonth = quotesThisMonth.length
@@ -45,9 +47,7 @@ export default function DashboardPage() {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = monthKey(d);
       const gerados = quotes.filter((q) => monthKey(new Date(q.createdAt)) === key).length;
-      const fechados = quotes.filter(
-        (q) => q.status === "APROVADA" && monthKey(new Date(q.updatedAt)) === key
-      ).length;
+      const fechados = quotes.filter((q) => q.saleClosed && monthKey(new Date(q.updatedAt)) === key).length;
       chart.push({ label: MONTH_LABEL.format(d), gerados, fechados });
     }
 

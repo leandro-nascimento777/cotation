@@ -70,8 +70,19 @@ export const flightRowSchema = z
     message: "Cada linha precisa ter pelo menos um trecho (ida ou volta) preenchido.",
   });
 
+export const passengersSchema = z.object({
+  adults: z.number().int().describe('Número de adultos, se aparecer em algum resumo/filtro de busca visível na tela (ex: "1 Adulto"). Use 1 se não conseguir identificar.'),
+  children: z.number().int().describe("Número de crianças, se visível. Use 0 se não conseguir identificar."),
+  infants: z.number().int().describe("Número de bebês/colo, se visível. Use 0 se não conseguir identificar."),
+});
+
 export const extractionResultSchema = z.object({
   rows: z.array(flightRowSchema),
+  passengers: passengersSchema
+    .optional()
+    .describe(
+      'Contagem de passageiros, SÓ quando aparecer explicitamente em algum resumo/filtro de busca na tela (ex: "1 Adulto", "2 Adultos, 1 Criança"). Deixe ausente se essa informação não estiver visível na imagem — não invente.'
+    ),
 });
 
 export type ExtractionResult = z.infer<typeof extractionResultSchema>;

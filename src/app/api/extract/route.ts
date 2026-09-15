@@ -41,7 +41,12 @@ visível.
 
 Em todos os formatos: máxima fidelidade ao que está escrito — não traduza, não arredonde, não invente \
 valores nem preencha campos que não conseguir ler (use "" para texto ou 0 para número quando não \
-houver o dado). Converta valores como "R$ 1.917,15" para o número 1917.15.`;
+houver o dado). Converta valores como "R$ 1.917,15" para o número 1917.15.
+
+Se a imagem mostrar, em algum resumo/filtro de busca (barra de pesquisa, cabeçalho da tela, etc.), a \
+quantidade de passageiros (ex: "1 Adulto", "2 Adultos, 1 Criança, 1 Bebê"), preencha o campo \
+"passengers" de acordo. Se essa informação não estiver visível em nenhum lugar da imagem, deixe \
+"passengers" ausente — não invente uma quantidade.`;
 
 export async function POST(req: NextRequest) {
   try {
@@ -89,7 +94,7 @@ export async function POST(req: NextRequest) {
       })),
     }));
 
-    return NextResponse.json({ rows });
+    return NextResponse.json({ rows, passengers: result.object.passengers ?? null });
   } catch (err) {
     console.error("Erro na extração:", err);
     const message = err instanceof Error ? err.message : "Erro desconhecido na extração.";

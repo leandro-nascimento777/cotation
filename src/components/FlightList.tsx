@@ -18,9 +18,9 @@ const GROUP_LABEL: Record<LegKind, string> = {
   volta: "Volta",
 };
 
-function LegLine({ leg, icon: Icon }: { leg: FlightLeg; icon: typeof PlaneTakeoff }) {
+export function LegLine({ leg, icon: Icon }: { leg: FlightLeg; icon: typeof PlaneTakeoff }) {
   return (
-    <div className="flex items-center gap-2 text-xs text-slate-500">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
       <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
       <span className="font-medium text-slate-700">
         {leg.airline} {leg.flightNumber}
@@ -34,6 +34,7 @@ function LegLine({ leg, icon: Icon }: { leg: FlightLeg; icon: typeof PlaneTakeof
       </span>
       <span>· {leg.duration}</span>
       <span>· {leg.stops === 0 ? "direto" : `${leg.stops} conexão(ões)`}</span>
+      {leg.aircraft ? <span>· {leg.aircraft}</span> : null}
     </div>
   );
 }

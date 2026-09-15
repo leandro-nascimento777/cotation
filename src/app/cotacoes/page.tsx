@@ -16,7 +16,7 @@ import {
   QuotePriorityType,
   QuoteStatusType,
 } from "@/lib/store/types";
-import { Clock, Filter, MessageCircle, Receipt, Search, TrendingUp } from "lucide-react";
+import { CheckCircle2, Clock, Filter, MessageCircle, Receipt, Search, TrendingUp } from "lucide-react";
 
 const COLUMN_COLOR: Record<QuoteStatusType, { bar: string; dot: string }> = {
   NOVA: { bar: "border-t-indigo-500", dot: "bg-indigo-500" },
@@ -49,6 +49,7 @@ export default function CotacoesPage() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<QuoteStatusType | null>(null);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+  const [modalInitialMode, setModalInitialMode] = useState<"view" | "close">("view");
 
   const clientNameById = useMemo(() => new Map(clients.map((c) => [c.id, c.nomeCompleto])), [clients]);
   const clientPhoneById = useMemo(() => new Map(clients.map((c) => [c.id, c.telefone])), [clients]);
@@ -210,7 +211,10 @@ export default function CotacoesPage() {
                                   setDragId(null);
                                   setDragOverStatus(null);
                                 }}
-                                onClick={() => setSelectedQuoteId(quote.id)}
+                                onClick={() => {
+                                  setModalInitialMode("view");
+                                  setSelectedQuoteId(quote.id);
+                                }}
                                 className="cursor-grab rounded-lg border border-slate-200 bg-white p-3 shadow-sm hover:border-teal-300 active:cursor-grabbing"
                               >
                                 <div className="mb-2 flex items-center justify-between gap-2">
@@ -245,6 +249,29 @@ export default function CotacoesPage() {
                                     </a>
                                   ) : null}
                                 </div>
+                                {status === "APROVADA" ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setModalInitialMode("close");
+                                      setSelectedQuoteId(quote.id);
+                                    }}
+                                    className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold ${
+                                      quote.saleClosed
+                                        ? "bg-green-50 text-green-700 hover:bg-green-100"
+                                        : "bg-teal-600 text-white hover:bg-teal-700"
+                                    }`}
+                                  >
+                                    {quote.saleClosed ? (
+                                      <>
+                                        <CheckCircle2 className="h-3.5 w-3.5" /> Venda fechada
+                                      </>
+                                    ) : (
+                                      "Fechar venda"
+                                    )}
+                                  </button>
+                                ) : null}
                               </div>
                             );
                           })
@@ -260,7 +287,12 @@ export default function CotacoesPage() {
       </div>
 
       {selectedQuoteId ? (
-        <QuoteDetailModal quoteId={selectedQuoteId} onClose={() => setSelectedQuoteId(null)} />
+        <QuoteDetailModal
+          key={selectedQuoteId}
+          quoteId={selectedQuoteId}
+          initialMode={modalInitialMode}
+          onClose={() => setSelectedQuoteId(null)}
+        />
       ) : null}
     </div>
   );
