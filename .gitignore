@@ -37,6 +37,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# agent skills instaladas automaticamente por integrações (ex: Neon) —
+# metadados de referência pra ferramentas de IA, não código do app
+.agents/
+.claude/
+skills-lock.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

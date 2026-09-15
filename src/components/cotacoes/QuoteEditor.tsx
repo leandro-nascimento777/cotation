@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { UploadCard } from "@/components/UploadCard";
@@ -8,9 +8,13 @@ import { FlightList } from "@/components/FlightList";
 import { PreviewPanel } from "@/components/PreviewPanel";
 import { QuoteTypeSelector } from "./QuoteTypeSelector";
 import { QuoteExtrasForm, QuoteExtras } from "./QuoteExtrasForm";
+import { ThemeModal } from "./proposal/ThemeModal";
+import { ShareModal } from "./proposal/ShareModal";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { buildAgencyInfoForQuote } from "@/lib/store/mergeAgencyInfo";
 import { resolveQuoteClientId } from "@/lib/store/resolveQuoteClient";
+import { getProposalShareByQuote } from "@/lib/proposal/actions";
+import { ProposalShareRecord } from "@/lib/proposal/types";
 import { Quote } from "@/lib/store/types";
 import { FlightRow, flightRowsToQuoteItems, QuoteItem } from "@/lib/types";
 import { parseExtractedDateToISO } from "@/lib/format";
@@ -78,6 +82,13 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   const [extractError, setExtractError] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [proposalShare, setProposalShare] = useState<ProposalShareRecord | null>(null);
+  const [proposalModal, setProposalModal] = useState<"theme" | "share" | null>(null);
+
+  useEffect(() => {
+    if (!quoteId) return;
+    getProposalShareByQuote(quoteId).then(setProposalShare);
+  }, [quoteId]);
 
   const handleExtract = async (imageDataUrl: string) => {
     setImagePreview(imageDataUrl);
@@ -289,8 +300,31 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
           onDownloadPdf={handleDownloadPdf}
           pdfLoading={pdfLoading}
           pdfError={pdfError}
+          quoteId={quoteId}
+          proposalShare={proposalShare}
+          onManageProposal={setProposalModal}
         />
       </div>
+
+      {proposalModal === "theme" && quoteId ? (
+        <ThemeModal
+          quoteId={quoteId}
+          numero={numero}
+          extras={extras}
+          items={items}
+          agency={agency}
+          existingShare={proposalShare}
+          onClose={() => setProposalModal(null)}
+          onGenerated={(share) => {
+            setProposalShare(share);
+            setProposalModal("share");
+          }}
+        />
+      ) : null}
+
+      {proposalModal === "share" && proposalShare ? (
+        <ShareModal share={proposalShare} onClose={() => setProposalModal(null)} onUpdated={setProposalShare} />
+      ) : null}
     </div>
   );
 }

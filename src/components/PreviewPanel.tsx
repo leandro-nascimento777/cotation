@@ -5,6 +5,7 @@ import { AgencyInfo, FlightLeg, QuoteItem } from "@/lib/types";
 import { buildWhatsAppText } from "@/lib/whatsapp";
 import { groupQuoteItems } from "@/lib/groupQuoteItems";
 import { formatCurrencyBRL, validityDateTimePtBR } from "@/lib/format";
+import { ProposalShareRecord } from "@/lib/proposal/types";
 import { Check, Copy, Download, FileText, Link2, MessageCircle } from "lucide-react";
 
 interface PreviewPanelProps {
@@ -13,9 +14,21 @@ interface PreviewPanelProps {
   onDownloadPdf: () => Promise<void>;
   pdfLoading: boolean;
   pdfError: string | null;
+  quoteId: string | null;
+  proposalShare: ProposalShareRecord | null;
+  onManageProposal: (mode: "theme" | "share") => void;
 }
 
-export function PreviewPanel({ items, agency, onDownloadPdf, pdfLoading, pdfError }: PreviewPanelProps) {
+export function PreviewPanel({
+  items,
+  agency,
+  onDownloadPdf,
+  pdfLoading,
+  pdfError,
+  quoteId,
+  proposalShare,
+  onManageProposal,
+}: PreviewPanelProps) {
   const [tab, setTab] = useState<"whatsapp" | "pdf" | "link">("whatsapp");
   const [copied, setCopied] = useState(false);
   const selected = items.filter((i) => i.selected);
@@ -90,13 +103,61 @@ export function PreviewPanel({ items, agency, onDownloadPdf, pdfLoading, pdfErro
         </div>
       ) : tab === "pdf" ? (
         <PdfMockPreview items={selected} agency={agency} />
-      ) : (
+      ) : !quoteId ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-14 text-center">
           <Link2 className="h-6 w-6 text-slate-300" />
-          <p className="text-sm font-medium text-slate-500">Link público — em breve</p>
+          <p className="text-sm font-medium text-slate-500">Salve a cotação primeiro</p>
           <p className="max-w-xs text-xs text-slate-400">
-            Um link que o cliente pode abrir pra ver a cotação como página web, sem precisar de PDF nem WhatsApp.
+            Crie a cotação pra poder montar a proposta pública e gerar o link.
           </p>
+        </div>
+      ) : !proposalShare ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-14 text-center">
+          <Link2 className="h-6 w-6 text-slate-300" />
+          <p className="text-sm font-medium text-slate-500">Nenhuma proposta pública ainda</p>
+          <p className="max-w-xs text-xs text-slate-400">
+            O cliente escolhe um tema pra capa e você gera um link que ele abre em qualquer aparelho.
+          </p>
+          <button
+            type="button"
+            onClick={() => onManageProposal("theme")}
+            className="mt-1 flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700"
+          >
+            <Link2 className="h-3.5 w-3.5" /> Montar Proposta Comercial
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          {proposalShare.clientDecision ? (
+            <div
+              className={`rounded-lg px-3 py-2 text-xs font-medium ${
+                proposalShare.clientDecision === "APROVADO" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+              }`}
+            >
+              {proposalShare.clientDecision === "APROVADO" ? "✓ Cliente aprovou a proposta." : "Cliente pediu revisão."}
+              {proposalShare.clientObservation ? (
+                <p className="mt-1 italic text-slate-600">&ldquo;{proposalShare.clientObservation}&rdquo;</p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">Aguardando resposta do cliente.</p>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => onManageProposal("share")}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700"
+            >
+              <Link2 className="h-3.5 w-3.5" /> Compartilhar
+            </button>
+            <button
+              type="button"
+              onClick={() => onManageProposal("theme")}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white"
+            >
+              Editar tema
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -1,12 +1,15 @@
-// Schema Prisma — ESQUEMATIZADO PARA CONEXÃO FUTURA.
+// Schema Prisma — Postgres (Neon via Vercel Marketplace) já conectado.
 //
-// Este arquivo não está conectado a nenhum banco real ainda: é só o
-// desenho do modelo de dados para quando a persistência for ligada de
-// verdade (hoje o app usa Context + localStorage, ver
-// src/lib/store/AppDataContext.tsx). Nada em src/ importa @prisma/client.
+// Os models Agency/TeamMember/Client/Quote/FlightOption/HotelStay abaixo
+// continuam ESQUEMATIZADOS PARA CONEXÃO FUTURA — o app ainda usa
+// Context + localStorage pra esses dados (ver
+// src/lib/store/AppDataContext.tsx), nenhum deles é lido/escrito via
+// Prisma hoje.
 //
-// Recomendado: Postgres (ex: Neon via Vercel Marketplace) quando conectar.
-// generator/datasource abaixo são só a configuração padrão pra isso.
+// Os models ProposalShare/ProposalTemporaryLink (no fim do arquivo) SÃO
+// usados de verdade — é o snapshot público da cotação por trás da aba
+// "Link" (ver src/lib/proposal/actions.ts) — porque a página pública da
+// proposta precisa existir fora do localStorage do agente.
 
 generator client {
   provider = "prisma-client-js"
@@ -14,7 +17,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 /// Dados da agência. Hoje só existe 1 registro (sem multi-tenant/login);
@@ -210,4 +212,62 @@ model HotelStay {
   alimentacao String?
 
   @@index([quoteId])
+}
+
+// ── A partir daqui: models de verdade, usados pela aba "Link" ──────────────
+
+/// Snapshot público de uma cotação — gerado/atualizado pelo agente ao montar
+/// a proposta (aba Link). A página pública (/proposta/[id] e /proposta/h/
+/// [token]) só lê daqui, nunca do localStorage do agente. `quoteLocalId` é o
+/// id da Quote no localStorage (sem FK — não existe tabela Quote no banco).
+model ProposalShare {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quoteLocalId String @unique
+
+  numero           String
+  destino          String?
+  periodoInicio    String?
+  periodoFim       String?
+  adults           Int
+  children         Int
+  infants          Int
+  paymentMethod    String?
+  validityHours    Int
+  mensagemDestaque String?
+  observacoes      String?
+  flightItems      Json
+  agencySnapshot   Json
+  clientSnapshot   Json?
+
+  themeId       String
+  coverImageUrl String?
+  coverTitle    String
+  coverSubtitle String?
+
+  selectedIdaRowId    String?
+  selectedIdaFareId   String?
+  selectedVoltaRowId  String?
+  selectedVoltaFareId String?
+  clientObservation   String?
+  clientDecision      String?
+  decidedAt           DateTime?
+
+  temporaryLinks ProposalTemporaryLink[]
+}
+
+/// Link temporário (24h) de acesso a uma proposta — revogável a qualquer
+/// momento. Vários podem coexistir para a mesma ProposalShare.
+model ProposalTemporaryLink {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  shareId   String
+  share     ProposalShare @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  @@index([shareId])
 }

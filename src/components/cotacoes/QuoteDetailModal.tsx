@@ -8,6 +8,8 @@ import { FlightList, LegLine } from "@/components/FlightList";
 import { QuoteExtrasForm, QuoteExtras } from "./QuoteExtrasForm";
 import { CloseSaleForm } from "./CloseSaleForm";
 import { resolveQuoteClientId } from "@/lib/store/resolveQuoteClient";
+import { getProposalShareByQuote } from "@/lib/proposal/actions";
+import { ProposalShareRecord } from "@/lib/proposal/types";
 import { formatCurrencyBRL, validityDateTimePtBR } from "@/lib/format";
 import { Client, PAYMENT_METHOD_LABEL, QUOTE_PRIORITY_LABEL, Quote } from "@/lib/store/types";
 import { QuoteItem } from "@/lib/types";
@@ -85,6 +87,7 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
   const [mode, setMode] = useState<"view" | "edit" | "close">(initialMode);
   const [extras, setExtras] = useState<QuoteExtras | null>(quote ? toExtras(quote, client) : null);
   const [items, setItems] = useState<QuoteItem[]>(quote?.flightItems || []);
+  const [proposalShare, setProposalShare] = useState<ProposalShareRecord | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -93,6 +96,10 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
+
+  useEffect(() => {
+    getProposalShareByQuote(quoteId).then(setProposalShare);
+  }, [quoteId]);
 
   if (!quote || !extras) return null;
 
@@ -211,6 +218,19 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
             <CloseSaleForm quote={quote} onCancel={() => setMode("view")} onConfirm={handleConfirmClose} />
           ) : (
             <div className="flex flex-col gap-4 text-sm">
+              {proposalShare?.clientDecision ? (
+                <div
+                  className={`rounded-lg px-3 py-2 text-xs font-medium ${
+                    proposalShare.clientDecision === "APROVADO" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+                  }`}
+                >
+                  {proposalShare.clientDecision === "APROVADO" ? "✓ Cliente aprovou a proposta." : "Cliente pediu revisão."}
+                  {proposalShare.clientObservation ? (
+                    <p className="mt-1 italic text-slate-600">&ldquo;{proposalShare.clientObservation}&rdquo;</p>
+                  ) : null}
+                </div>
+              ) : null}
+
               {quote.saleClosed && (closedIdaItem || closedVoltaItem) ? (
                 <div>
                   <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-green-700">
