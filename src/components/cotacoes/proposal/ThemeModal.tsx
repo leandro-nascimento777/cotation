@@ -4,11 +4,12 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { saveProposalShare, uploadCoverImage } from "@/lib/proposal/actions";
 import { ProposalShareRecord } from "@/lib/proposal/types";
+import { ProposalPdfThemeInput } from "@/lib/pdf/buildProposalPdfData";
 import { DEFAULT_THEME_ID, PROPOSAL_THEMES } from "@/lib/proposal/themes";
 import { QuoteExtras } from "@/components/cotacoes/QuoteExtrasForm";
 import { AgencySettings } from "@/lib/store/types";
 import { QuoteItem } from "@/lib/types";
-import { Check, CloudUpload, Loader2, X } from "lucide-react";
+import { Check, CloudUpload, Download, Loader2, X } from "lucide-react";
 
 const DEFAULT_NEXT_STEPS = [
   "Escolha a opção final (com ou sem extras).",
@@ -21,17 +22,22 @@ const TITLE_MAX = 40;
 const SUBTITLE_MAX = 80;
 
 interface ThemeModalProps {
-  quoteId: string;
+  /** "link" salva um ProposalShare e gera o link público; "pdf" só coleta o
+   * tema pra gerar o PDF (mesmo seletor, sem persistir nada). */
+  mode: "link" | "pdf";
+  quoteId: string | null;
   numero: string;
   extras: QuoteExtras;
   items: QuoteItem[];
   agency: AgencySettings;
   existingShare: ProposalShareRecord | null;
   onClose: () => void;
-  onGenerated: (share: ProposalShareRecord) => void;
+  onGenerated?: (share: ProposalShareRecord) => void;
+  onGeneratePdf?: (theme: ProposalPdfThemeInput) => Promise<void>;
 }
 
 export function ThemeModal({
+  mode,
   quoteId,
   numero,
   extras,
@@ -40,6 +46,7 @@ export function ThemeModal({
   existingShare,
   onClose,
   onGenerated,
+  onGeneratePdf,
 }: ThemeModalProps) {
   const [themeId, setThemeId] = useState(existingShare?.themeId ?? DEFAULT_THEME_ID);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(existingShare?.coverImageUrl ?? null);
@@ -78,6 +85,19 @@ export function ThemeModal({
   const handleConfirm = async () => {
     setSaving(true);
     try {
+      if (mode === "pdf") {
+        await onGeneratePdf?.({
+          themeId,
+          coverImageUrl,
+          coverTitle: coverTitle.trim() || "PROPOSTA DE VIAGEM",
+          coverSubtitle: coverSubtitle.trim(),
+          nextSteps: nextSteps.trim(),
+        });
+        onClose();
+        return;
+      }
+
+      if (!quoteId) return;
       const selected = items.filter((i) => i.selected);
       const share = await saveProposalShare({
         quoteLocalId: quoteId,
@@ -113,9 +133,9 @@ export function ThemeModal({
         nextSteps: nextSteps.trim(),
       });
       toast.success("Proposta gerada.");
-      onGenerated(share);
+      onGenerated?.(share);
     } catch {
-      toast.error("Falha ao gerar o link da proposta.");
+      toast.error(mode === "pdf" ? "Falha ao gerar o PDF." : "Falha ao gerar o link da proposta.");
     } finally {
       setSaving(false);
     }
@@ -130,7 +150,11 @@ export function ThemeModal({
         <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
           <div>
             <h2 className="text-xl font-bold text-slate-900">Configurar Proposta</h2>
-            <p className="mt-0.5 text-sm text-slate-500">Personalize a capa e os próximos passos da proposta web</p>
+            <p className="mt-0.5 text-sm text-slate-500">
+              {mode === "pdf"
+                ? "Escolha o tema da capa pra gerar o PDF da proposta."
+                : "Personalize a capa e os próximos passos da proposta web"}
+            </p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
             <X className="h-5 w-5" />
@@ -226,7 +250,8 @@ export function ThemeModal({
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-800">Próximos Passos</label>
             <p className="mb-2 text-xs text-slate-500">
-              Instruções exibidas no rodapé da proposta web indicando ao cliente o que fazer após receber a cotação.
+              Instruções exibidas no rodapé da proposta{mode === "pdf" ? "" : " web"} indicando ao cliente o que fazer
+              após receber a cotação.
             </p>
             <textarea
               value={nextSteps}
@@ -247,8 +272,14 @@ export function ThemeModal({
             disabled={saving || uploading}
             className="flex items-center gap-1.5 rounded-xl bg-lime-400 px-4 py-2.5 text-sm font-bold text-slate-900 hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Confirmar e Gerar Link
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : mode === "pdf" ? (
+              <Download className="h-4 w-4" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+            {mode === "pdf" ? "Gerar PDF" : "Confirmar e Gerar Link"}
           </button>
         </div>
       </div>

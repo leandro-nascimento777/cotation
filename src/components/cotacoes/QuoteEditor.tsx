@@ -15,6 +15,7 @@ import { buildAgencyInfoForQuote } from "@/lib/store/mergeAgencyInfo";
 import { resolveQuoteClientId } from "@/lib/store/resolveQuoteClient";
 import { getProposalShareByQuote } from "@/lib/proposal/actions";
 import { ProposalShareRecord } from "@/lib/proposal/types";
+import { ProposalPdfThemeInput } from "@/lib/pdf/buildProposalPdfData";
 import { Quote } from "@/lib/store/types";
 import { FlightRow, flightRowsToQuoteItems, QuoteItem } from "@/lib/types";
 import { parseExtractedDateToISO } from "@/lib/format";
@@ -83,7 +84,7 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [proposalShare, setProposalShare] = useState<ProposalShareRecord | null>(null);
-  const [proposalModal, setProposalModal] = useState<"theme" | "share" | null>(null);
+  const [proposalModal, setProposalModal] = useState<"theme" | "share" | "pdf" | null>(null);
 
   useEffect(() => {
     if (!quoteId) return;
@@ -176,23 +177,19 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
     return { id: created.id, numero: created.numero };
   };
 
-  const handleDownloadPdf = async () => {
+  /** Gera o PDF no mesmo layout visual da proposta pública (ver aba Link),
+   * porém estático — sem seleção nem somatório, só os voos e detalhes. O
+   * tema é escolhido no mesmo modal usado pra montar o link, mas aqui não
+   * salva nenhum ProposalShare. */
+  const handleGeneratePdfWithTheme = async (theme: ProposalPdfThemeInput) => {
     setPdfLoading(true);
     setPdfError(null);
     try {
       const { numero: numeroOrcamento } = persist();
-      const agencyInfo = buildAgencyInfoForQuote(agency, extras);
-      const res = await fetch("/api/pdf", {
+      const res = await fetch("/api/pdf/proposal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items,
-          agency: agencyInfo,
-          numeroOrcamento,
-          corPrimaria: agency.pdfCorPrimaria,
-          corSecundaria: agency.pdfCorSecundaria,
-          corTexto: agency.pdfCorTexto,
-        }),
+        body: JSON.stringify({ items, extras, agency, numero: numeroOrcamento, theme }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -202,7 +199,7 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${numeroOrcamento || "orcamento"}.pdf`;
+      a.download = `${numeroOrcamento || "proposta"}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -300,7 +297,6 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
         <PreviewPanel
           items={items}
           agency={agencyInfoPreview}
-          onDownloadPdf={handleDownloadPdf}
           pdfLoading={pdfLoading}
           pdfError={pdfError}
           quoteId={quoteId}
@@ -309,19 +305,21 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
         />
       </div>
 
-      {proposalModal === "theme" && quoteId ? (
+      {proposalModal === "theme" || proposalModal === "pdf" ? (
         <ThemeModal
+          mode={proposalModal === "pdf" ? "pdf" : "link"}
           quoteId={quoteId}
           numero={numero}
           extras={extras}
           items={items}
           agency={agency}
-          existingShare={proposalShare}
+          existingShare={proposalModal === "pdf" ? null : proposalShare}
           onClose={() => setProposalModal(null)}
           onGenerated={(share) => {
             setProposalShare(share);
             setProposalModal("share");
           }}
+          onGeneratePdf={handleGeneratePdfWithTheme}
         />
       ) : null}
 

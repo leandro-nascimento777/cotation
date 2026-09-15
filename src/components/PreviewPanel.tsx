@@ -11,18 +11,16 @@ import { Check, Copy, Download, FileText, Link2, MessageCircle } from "lucide-re
 interface PreviewPanelProps {
   items: QuoteItem[];
   agency: AgencyInfo;
-  onDownloadPdf: () => Promise<void>;
   pdfLoading: boolean;
   pdfError: string | null;
   quoteId: string | null;
   proposalShare: ProposalShareRecord | null;
-  onManageProposal: (mode: "theme" | "share") => void;
+  onManageProposal: (mode: "theme" | "share" | "pdf") => void;
 }
 
 export function PreviewPanel({
   items,
   agency,
-  onDownloadPdf,
   pdfLoading,
   pdfError,
   quoteId,
@@ -81,12 +79,12 @@ export function PreviewPanel({
           </button>
         ) : tab === "pdf" ? (
           <button
-            onClick={onDownloadPdf}
+            onClick={() => onManageProposal("pdf")}
             disabled={selected.length === 0 || pdfLoading}
             className="flex items-center gap-1 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Download className="h-3.5 w-3.5" />
-            {pdfLoading ? "Gerando…" : "Baixar PDF"}
+            {pdfLoading ? "Gerando…" : "Escolher tema e baixar"}
           </button>
         ) : null}
       </div>

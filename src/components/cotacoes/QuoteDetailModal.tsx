@@ -215,7 +215,12 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
               {items.length > 0 && <FlightList items={items} onToggle={handleToggle} />}
             </div>
           ) : mode === "close" ? (
-            <CloseSaleForm quote={quote} onCancel={() => setMode("view")} onConfirm={handleConfirmClose} />
+            <CloseSaleForm
+              quote={quote}
+              lockedByClient={proposalShare?.clientDecision === "APROVADO"}
+              onCancel={() => setMode("view")}
+              onConfirm={handleConfirmClose}
+            />
           ) : (
             <div className="flex flex-col gap-4 text-sm">
               {proposalShare?.clientDecision ? (
