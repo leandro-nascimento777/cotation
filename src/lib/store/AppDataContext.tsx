@@ -183,7 +183,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
         numero,
-        status: draft.status || "RASCUNHO",
+        status: draft.status || "NOVA",
         ...draft,
       };
       setQuotes((prev) => [quote, ...prev]);
@@ -217,12 +217,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         periodoInicio: original.periodoInicio,
         periodoFim: original.periodoFim,
         paymentMethod: original.paymentMethod,
-        validityDays: original.validityDays,
+        validityHours: original.validityHours,
+        priority: original.priority,
         mensagemDestaque: original.mensagemDestaque,
         observacoes: original.observacoes,
         valorTotal: original.valorTotal,
         flightItems: original.flightItems,
-        status: "RASCUNHO",
+        status: "NOVA",
       });
     },
     [quotes, createQuote]

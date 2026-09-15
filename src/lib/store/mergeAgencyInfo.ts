@@ -7,7 +7,7 @@ export interface QuoteOverrides {
   sellerPhone: string;
   mensagemDestaque: string;
   observacoes: string;
-  validityDays: number;
+  validityHours: number;
 }
 
 /** Combina os dados persistentes da agência (Configurações) com os dados
@@ -27,7 +27,7 @@ export function buildAgencyInfoForQuote(
     message: overrides.mensagemDestaque,
     notes: overrides.observacoes,
     logoDataUrl: settings.pdfUsarLogoAgencia ? settings.logoDataUrl : "",
-    validityDays: overrides.validityDays,
+    validityHours: overrides.validityHours,
     cnpj: settings.cnpj,
     cadastur: settings.cadastur,
   };

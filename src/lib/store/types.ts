@@ -7,14 +7,36 @@ import { QuoteItem } from "@/lib/types";
 
 export type QuoteType = "VOO" | "HOTEL" | "PACOTE";
 
-export type QuoteStatusType = "RASCUNHO" | "ENVIADA" | "APROVADA" | "RECUSADA" | "EXPIRADA";
+export type QuoteStatusType =
+  | "NOVA"
+  | "EM_ATENDIMENTO"
+  | "PROPOSTA_ENVIADA"
+  | "AGUARDANDO_CLIENTE"
+  | "APROVADA";
 
 export const QUOTE_STATUS_LABEL: Record<QuoteStatusType, string> = {
-  RASCUNHO: "Rascunho",
-  ENVIADA: "Enviada",
+  NOVA: "Nova",
+  EM_ATENDIMENTO: "Em Atendimento",
+  PROPOSTA_ENVIADA: "Proposta Enviada",
+  AGUARDANDO_CLIENTE: "Aguardando Cliente",
   APROVADA: "Aprovada",
-  RECUSADA: "Recusada",
-  EXPIRADA: "Expirada",
+};
+
+/** Ordem das colunas no board de cotações (ver /cotacoes). */
+export const QUOTE_STATUS_ORDER: QuoteStatusType[] = [
+  "NOVA",
+  "EM_ATENDIMENTO",
+  "PROPOSTA_ENVIADA",
+  "AGUARDANDO_CLIENTE",
+  "APROVADA",
+];
+
+export type QuotePriorityType = "BAIXA" | "NORMAL" | "ALTA";
+
+export const QUOTE_PRIORITY_LABEL: Record<QuotePriorityType, string> = {
+  BAIXA: "Baixa",
+  NORMAL: "Normal",
+  ALTA: "Alta",
 };
 
 export type PaymentMethodType = "AVISTA" | "CARTAO_PARCELADO" | "BOLETO" | "OUTRO";
@@ -108,10 +130,11 @@ export interface Quote {
   periodoInicio: string;
   periodoFim: string;
   paymentMethod: PaymentMethodType | "";
-  validityDays: number;
+  validityHours: number;
   mensagemDestaque: string;
   observacoes: string;
   status: QuoteStatusType;
+  priority: QuotePriorityType;
   valorTotal: number;
   flightItems: QuoteItem[];
 }

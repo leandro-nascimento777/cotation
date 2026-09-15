@@ -8,8 +8,9 @@ import { EmptyState } from "@/components/shell/EmptyState";
 import { StatusBadge } from "@/components/shell/StatusBadge";
 import { StatTile } from "@/components/dashboard/StatTile";
 import { MonthlyQuotesChart, MonthlyPoint } from "@/components/dashboard/MonthlyQuotesChart";
+import { NewQuoteButton } from "@/components/shell/NewQuoteButton";
 import { formatCurrencyBRL } from "@/lib/format";
-import { DollarSign, Percent, Plus, Receipt, Users } from "lucide-react";
+import { DollarSign, Percent, Receipt, Users } from "lucide-react";
 
 const MONTH_LABEL = new Intl.DateTimeFormat("pt-BR", { month: "short" });
 
@@ -78,14 +79,7 @@ export default function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description="Visão geral das cotações e vendas da agência."
-        action={
-          <Link
-            href="/cotacoes/nova"
-            className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700"
-          >
-            <Plus className="h-4 w-4" /> Nova cotação
-          </Link>
-        }
+        action={<NewQuoteButton />}
       />
 
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -94,14 +88,7 @@ export default function DashboardPage() {
             icon={Receipt}
             title="Ainda sem dados para mostrar"
             description="Assim que você criar cotações, as métricas de vendas e conversão aparecem aqui."
-            action={
-              <Link
-                href="/cotacoes/nova"
-                className="mt-2 flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700"
-              >
-                <Plus className="h-4 w-4" /> Nova cotação
-              </Link>
-            }
+            action={<NewQuoteButton className="mt-2" />}
           />
         ) : (
           <>

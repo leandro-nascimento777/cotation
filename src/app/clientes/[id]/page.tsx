@@ -9,6 +9,7 @@ import { ClientForm } from "@/components/clientes/ClientForm";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { StatusBadge } from "@/components/shell/StatusBadge";
 import { EmptyState } from "@/components/shell/EmptyState";
+import { NewQuoteButton } from "@/components/shell/NewQuoteButton";
 import { formatCurrencyBRL } from "@/lib/format";
 import { PAYMENT_METHOD_LABEL } from "@/lib/store/types";
 import { ArrowLeft, Pencil, Receipt, Trash2 } from "lucide-react";
@@ -138,14 +139,7 @@ export default function ClientDetailPage() {
               icon={Receipt}
               title="Nenhuma cotação ainda"
               description="Cotações vinculadas a este cliente vão aparecer aqui."
-              action={
-                <Link
-                  href="/cotacoes/nova"
-                  className="mt-2 rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700"
-                >
-                  Nova cotação
-                </Link>
-              }
+              action={<NewQuoteButton className="mt-2" />}
             />
           ) : (
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

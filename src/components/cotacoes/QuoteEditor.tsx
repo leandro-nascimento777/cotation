@@ -26,7 +26,8 @@ function extrasFromQuote(quote: Quote | undefined, defaults: QuoteExtras): Quote
     periodoInicio: quote.periodoInicio,
     periodoFim: quote.periodoFim,
     paymentMethod: quote.paymentMethod,
-    validityDays: quote.validityDays,
+    validityHours: quote.validityHours,
+    priority: quote.priority,
     mensagemDestaque: quote.mensagemDestaque,
     observacoes: quote.observacoes,
   };
@@ -46,7 +47,8 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
     periodoInicio: "",
     periodoFim: "",
     paymentMethod: "",
-    validityDays: 3,
+    validityHours: 24,
+    priority: "NORMAL",
     mensagemDestaque: "Agradecemos a preferência! Seguem as opções de voo selecionadas para sua viagem.",
     observacoes: "Valores sujeitos a disponibilidade e alteração sem aviso prévio até a confirmação da reserva.",
   };
@@ -106,7 +108,8 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
       periodoInicio: extras.periodoInicio,
       periodoFim: extras.periodoFim,
       paymentMethod: extras.paymentMethod,
-      validityDays: extras.validityDays,
+      validityHours: extras.validityHours,
+      priority: extras.priority,
       mensagemDestaque: extras.mensagemDestaque,
       observacoes: extras.observacoes,
       valorTotal,
@@ -170,7 +173,7 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   };
 
   const handleMarkSent = () => {
-    const { id } = persist("ENVIADA");
+    const { id } = persist("PROPOSTA_ENVIADA");
     toast.success("Cotação marcada como enviada.");
     router.push(`/cotacoes/${id}`);
   };

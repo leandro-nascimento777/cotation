@@ -1,11 +1,11 @@
 import { QUOTE_STATUS_LABEL, QuoteStatusType } from "@/lib/store/types";
 
 const STATUS_STYLE: Record<QuoteStatusType, string> = {
-  RASCUNHO: "bg-slate-100 text-slate-600",
-  ENVIADA: "bg-blue-50 text-blue-700",
+  NOVA: "bg-indigo-50 text-indigo-700",
+  EM_ATENDIMENTO: "bg-amber-50 text-amber-700",
+  PROPOSTA_ENVIADA: "bg-blue-50 text-blue-700",
+  AGUARDANDO_CLIENTE: "bg-purple-50 text-purple-700",
   APROVADA: "bg-green-50 text-green-700",
-  RECUSADA: "bg-red-50 text-red-700",
-  EXPIRADA: "bg-amber-50 text-amber-700",
 };
 
 export function StatusBadge({ status }: { status: QuoteStatusType }) {

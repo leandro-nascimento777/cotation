@@ -54,13 +54,14 @@ export function formatCnpjMask(value: string): string {
   return out;
 }
 
-/** Data de validade da cotação: hoje + N dias, formato curto (DD/MM/AAAA). */
-export function validityDatePtBR(days: number, from = new Date()): string {
-  const date = new Date(from);
-  date.setDate(date.getDate() + days);
-  return date.toLocaleDateString("pt-BR", {
+/** Data/hora de validade da cotação: agora + N horas, formato "DD/MM/AAAA HH:mm". */
+export function validityDateTimePtBR(hours: number, from = new Date()): string {
+  const date = new Date(from.getTime() + hours * 60 * 60 * 1000);
+  return date.toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }

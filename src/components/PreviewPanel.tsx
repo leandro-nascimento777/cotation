@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AgencyInfo, FlightLeg, QuoteItem } from "@/lib/types";
 import { buildWhatsAppText } from "@/lib/whatsapp";
 import { groupQuoteItems } from "@/lib/groupQuoteItems";
-import { formatCurrencyBRL, validityDatePtBR } from "@/lib/format";
+import { formatCurrencyBRL, validityDateTimePtBR } from "@/lib/format";
 import { Check, Copy, Download, FileText, MessageCircle } from "lucide-react";
 
 interface PreviewPanelProps {
@@ -138,7 +138,7 @@ function PdfMockPreview({ items, agency }: { items: QuoteItem[]; agency: AgencyI
           <div className="text-right text-[9px] text-slate-500">
             <p>Orçamento nº</p>
             <p className="text-sm font-bold text-[#1b4f8c]">ORC-{new Date().getFullYear()}-XXXXXX</p>
-            <p className="text-slate-400">Válido até {validityDatePtBR(agency.validityDays)}</p>
+            <p className="text-slate-400">Válido até {validityDateTimePtBR(agency.validityHours)}</p>
             <p>{[agency.sellerName, agency.phone, agency.email].filter(Boolean).join(" · ")}</p>
           </div>
         </div>

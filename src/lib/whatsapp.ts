@@ -1,5 +1,5 @@
 import { AgencyInfo, QuoteItem } from "./types";
-import { formatCurrencyBRL, validityDatePtBR } from "./format";
+import { formatCurrencyBRL, validityDateTimePtBR } from "./format";
 import { groupQuoteItems } from "./groupQuoteItems";
 
 /** Gera o texto formatado (Markdown do WhatsApp: *negrito*, _itálico_) a
@@ -66,7 +66,7 @@ export function buildWhatsAppText(items: QuoteItem[], agency: AgencyInfo): strin
     lines.push("");
   }
 
-  lines.push(`🗓️ Cotação válida até *${validityDatePtBR(agency.validityDays)}*`);
+  lines.push(`🗓️ Cotação válida até *${validityDateTimePtBR(agency.validityHours)}*`);
   lines.push("");
 
   if (agency.notes.trim()) {

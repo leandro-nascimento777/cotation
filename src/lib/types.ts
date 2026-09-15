@@ -78,7 +78,7 @@ export interface AgencyInfo {
   message: string; // texto do banner de destaque / mensagem de agradecimento
   notes: string; // observações importantes (rodapé)
   logoDataUrl: string; // logo da agência (data URL), opcional — vazio = placeholder "LOGO" no PDF
-  validityDays: number; // por quantos dias a cotação vale a partir de hoje
+  validityHours: number; // por quantas horas a cotação vale a partir de agora
   cnpj: string; // CNPJ da agência (auto-preenchível via consulta)
   cadastur: string; // número de registro no Cadastur (Ministério do Turismo)
 }
@@ -92,7 +92,7 @@ export const defaultAgencyInfo: AgencyInfo = {
   message: "Agradecemos a preferência! Seguem as opções de voo selecionadas para sua viagem.",
   notes: "Valores sujeitos a disponibilidade e alteração sem aviso prévio até a confirmação da reserva.",
   logoDataUrl: "",
-  validityDays: 3,
+  validityHours: 24,
   cnpj: "",
   cadastur: "",
 };

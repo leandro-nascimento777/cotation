@@ -1,6 +1,11 @@
 "use client";
 
-import { PAYMENT_METHOD_LABEL, PaymentMethodType } from "@/lib/store/types";
+import {
+  PAYMENT_METHOD_LABEL,
+  PaymentMethodType,
+  QUOTE_PRIORITY_LABEL,
+  QuotePriorityType,
+} from "@/lib/store/types";
 import { ClientPicker } from "./ClientPicker";
 import { TeamMemberPicker } from "./TeamMemberPicker";
 
@@ -14,7 +19,8 @@ export interface QuoteExtras {
   periodoInicio: string;
   periodoFim: string;
   paymentMethod: PaymentMethodType | "";
-  validityDays: number;
+  validityHours: number;
+  priority: QuotePriorityType;
   mensagemDestaque: string;
   observacoes: string;
 }
@@ -113,11 +119,25 @@ export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
         </label>
         <Field label="Destino" value={extras.destino} onChange={(v) => set("destino", v)} placeholder="Ex: Belo Horizonte" />
         <Field
-          label="Validade da cotação (dias)"
+          label="Validade da cotação (horas)"
           type="number"
-          value={extras.validityDays}
-          onChange={(v) => set("validityDays", Math.max(1, Number(v) || 1))}
+          value={extras.validityHours}
+          onChange={(v) => set("validityHours", Math.max(1, Number(v) || 1))}
         />
+        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+          Prioridade
+          <select
+            value={extras.priority}
+            onChange={(e) => set("priority", e.target.value as QuotePriorityType)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
+          >
+            {Object.entries(QUOTE_PRIORITY_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
         <Field label="Período — ida" type="date" value={extras.periodoInicio} onChange={(v) => set("periodoInicio", v)} />
         <Field label="Período — volta" type="date" value={extras.periodoFim} onChange={(v) => set("periodoFim", v)} />
       </div>

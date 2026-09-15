@@ -1,6 +1,6 @@
 import { AgencyInfo, FlightLeg, QuoteItem } from "../types";
 import { groupQuoteItems } from "../groupQuoteItems";
-import { formatCurrencyBRL, formatDatePtBR, quoteNumber, validityDatePtBR } from "../format";
+import { formatCurrencyBRL, formatDatePtBR, quoteNumber, validityDateTimePtBR } from "../format";
 
 interface TemplateLeg {
   cia_aerea: string;
@@ -112,7 +112,7 @@ export function buildFlightQuoteData(
     cadastur: agency.cadastur,
     data_emissao: formatDatePtBR(),
     numero_orcamento: options.numeroOrcamento || quoteNumber(),
-    data_validade: validityDatePtBR(agency.validityDays),
+    data_validade: validityDateTimePtBR(agency.validityHours),
     empresa_nome_banner: agency.message,
     cor_primaria: options.corPrimaria || "",
     cor_secundaria: options.corSecundaria || "",
