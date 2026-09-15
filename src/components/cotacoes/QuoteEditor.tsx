@@ -234,9 +234,12 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   };
 
   const handleCreate = () => {
-    persist();
+    const { id } = persist();
     toast.success("Cotação criada.");
-    router.push("/cotacoes");
+    // Fica na ficha da cotação (agora em modo edição) em vez de ir pro
+    // Kanban — a cotação já aparece lá, mas o usuário continua na tela
+    // pra seguir com a aba Link (montar/compartilhar a proposta).
+    router.push(`/cotacoes/${id}`);
   };
 
   const agencyInfoPreview = buildAgencyInfoForQuote(agency, extras);
