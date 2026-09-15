@@ -54,6 +54,53 @@ export function formatCnpjMask(value: string): string {
   return out;
 }
 
+/** Máscara de valor monetário (BRL) enquanto o usuário digita — trata os
+ * dígitos como centavos (ex: "150000" -> "1.500,00"), igual um campo de
+ * dinheiro comum em apps brasileiros. Aceita colar com ou sem pontuação. */
+export function formatMoneyMaskFromDigits(value: string): string {
+  const digits = value.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 13);
+  const cents = digits.padStart(3, "0");
+  const intPart = cents.slice(0, -2);
+  const decPart = cents.slice(-2);
+  const withThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return `${withThousands},${decPart}`;
+}
+
+/** Converte o texto já mascarado ("1.500,00") de volta pro número (1500). */
+export function moneyMaskToNumber(masked: string): number {
+  const normalized = masked.replace(/\./g, "").replace(",", ".");
+  return Number(normalized) || 0;
+}
+
+/** Formata um número já salvo (ex: vindo do storage) pro texto mascarado
+ * usado como valor inicial de um campo de dinheiro. */
+export function numberToMoneyMask(value: number): string {
+  return formatMoneyMaskFromDigits(Math.round(value * 100).toString());
+}
+
+/** Mantém só dígitos e uma vírgula (separador decimal) num campo de
+ * percentual — texto livre, sem máscara de milhar (percentuais não
+ * costumam passar de 3 dígitos inteiros). */
+export function sanitizePercentInput(value: string): string {
+  let cleaned = value.replace(/[^\d,]/g, "");
+  const firstComma = cleaned.indexOf(",");
+  if (firstComma !== -1) {
+    cleaned = cleaned.slice(0, firstComma + 1) + cleaned.slice(firstComma + 1).replace(/,/g, "");
+  }
+  return cleaned;
+}
+
+/** Converte o texto de percentual ("12,5") pro número (12.5). */
+export function percentInputToNumber(text: string): number {
+  return Number(text.replace(",", ".")) || 0;
+}
+
+/** Formata um número já salvo pro texto usado como valor inicial de um
+ * campo de percentual (ex: 12.5 -> "12,5"). */
+export function numberToPercentInput(value: number): string {
+  return value.toString().replace(".", ",");
+}
+
 /** Data/hora de validade da cotação: agora + N horas, formato "DD/MM/AAAA HH:mm". */
 export function validityDateTimePtBR(hours: number, from = new Date()): string {
   const date = new Date(from.getTime() + hours * 60 * 60 * 1000);

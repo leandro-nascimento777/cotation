@@ -48,6 +48,15 @@ export const PAYMENT_METHOD_LABEL: Record<PaymentMethodType, string> = {
   OUTRO: "Outro",
 };
 
+export type DuRavTipo = "PERCENTUAL" | "FIXO";
+export const DU_RAV_TIPO_LABEL: Record<DuRavTipo, string> = { PERCENTUAL: "Percentual", FIXO: "Valor Fixo" };
+
+export type FeeServicoModo = "POR_PASSAGEIRO" | "POR_BILHETE";
+export const FEE_SERVICO_MODO_LABEL: Record<FeeServicoModo, string> = {
+  POR_PASSAGEIRO: "Por passageiro",
+  POR_BILHETE: "Por bilhete",
+};
+
 /** Dados persistentes da agência (Configurações) — separado dos dados que
  * variam por cotação (ver QuoteFormOverrides em lib/types.ts). */
 export interface AgencySettings {
@@ -88,6 +97,50 @@ export const defaultAgencySettings: AgencySettings = {
   pdfCorTexto: "",
   pdfUsarLogoAgencia: true,
 };
+
+/** Regras financeiras de um perfil de cobrança (Configurações > Financeiro)
+ * — compõem o preço de venda em cima da tarifa líquida extraída do print
+ * (ver src/lib/pricing.ts). Um perfil = um conjunto completo de regras; a
+ * agência pode ter vários (ex: "Nacional", "Internacional", "Corporativo"),
+ * e cada cotação escolhe qual usar (ver Quote.pricingProfileId). */
+export interface PricingRules {
+  /** 1. Taxa DU / RAV — remuneração da agência de viagens, sobre a tarifa líquida. */
+  duRavTipo: DuRavTipo;
+  duRavValor: number; // % (duRavTipo=PERCENTUAL) ou R$ (duRavTipo=FIXO)
+  duRavPisoMinimo: number; // R$ — piso quando duRavTipo=PERCENTUAL e o % render um valor baixo demais
+  /** 2. Fee de serviço / taxa de agenciamento — valor fixo, nacional x internacional. */
+  feeServicoModo: FeeServicoModo;
+  feeServicoNacional: number; // R$
+  feeServicoInternacional: number; // R$
+  /** 3. Markup adicional de lucro — % sobre a tarifa líquida. */
+  markupPercent: number;
+  /** 4. Repasse de custo de parcelamento/gateway — % sobre o valor total da
+   * venda, só quando o cliente paga no cartão da própria agência. */
+  gatewayPercent: number;
+  /** 5. Margem de imposto retido — % sobre a soma das taxas da agência
+   * (DU/RAV + Fee + Markup), nunca sobre a tarifa do bilhete. */
+  impostoRetidoPercent: number;
+}
+
+export const defaultPricingRules: PricingRules = {
+  duRavTipo: "PERCENTUAL",
+  duRavValor: 0,
+  duRavPisoMinimo: 0,
+  feeServicoModo: "POR_PASSAGEIRO",
+  feeServicoNacional: 0,
+  feeServicoInternacional: 0,
+  markupPercent: 0,
+  gatewayPercent: 0,
+  impostoRetidoPercent: 0,
+};
+
+export interface PricingProfile extends PricingRules {
+  id: string;
+  createdAt: string;
+  nome: string;
+}
+
+export type PricingProfileDraft = Omit<PricingProfile, "id" | "createdAt">;
 
 export interface TeamMember {
   id: string;
@@ -146,6 +199,9 @@ export interface Quote {
   observacoes: string;
   status: QuoteStatusType;
   priority: QuotePriorityType;
+  /** Perfil de cobrança (Configurações > Financeiro) usado pra deduzir o
+   * preço de venda nessa cotação — null = nenhum selecionado. */
+  pricingProfileId: string | null;
   valorTotal: number;
   flightItems: QuoteItem[];
   /** true a partir do momento em que a venda é fechada (botão "Fechar

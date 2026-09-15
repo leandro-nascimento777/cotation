@@ -6,6 +6,8 @@ import {
   Client,
   ClientDraft,
   defaultAgencySettings,
+  PricingProfile,
+  PricingProfileDraft,
   Quote,
   QuoteDraft,
   TeamMember,
@@ -21,6 +23,7 @@ const STORAGE_KEYS = {
   clients: "cotation:clients",
   quotes: "cotation:quotes",
   team: "cotation:team",
+  pricingProfiles: "cotation:pricingProfiles",
 } as const;
 
 function readStorage<T>(key: string, fallback: T): T {
@@ -68,6 +71,12 @@ interface AppDataContextValue {
   updateTeamMember: (id: string, patch: Partial<TeamMemberDraft>) => void;
   deleteTeamMember: (id: string) => void;
 
+  pricingProfiles: PricingProfile[];
+  getPricingProfile: (id: string) => PricingProfile | undefined;
+  createPricingProfile: (draft: PricingProfileDraft) => PricingProfile;
+  updatePricingProfile: (id: string, patch: Partial<PricingProfileDraft>) => void;
+  deletePricingProfile: (id: string) => void;
+
   quotes: Quote[];
   getQuote: (id: string) => Quote | undefined;
   /** Cria a cotação já atribuindo o número (prefixo + próximo número da
@@ -85,6 +94,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [agency, setAgency] = useState<AgencySettings>(defaultAgencySettings);
   const [clients, setClients] = useState<Client[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [pricingProfiles, setPricingProfiles] = useState<PricingProfile[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
 
   // Hidrata do localStorage só no client, depois do primeiro render, pra
@@ -95,10 +105,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   // suspeito de cascata de renders, mas não há alternativa sem essa leitura
   // síncrona pontual no mount).
   useEffect(() => {
+    // Mescla com os defaults em vez de confiar cegamente no que já está
+    // salvo — agency.ts evolui com novos campos (ex: regras financeiras),
+    // e um registro salvo antes dessas mudanças não os teria, quebrando
+    // qualquer código que espera esses campos presentes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAgency(readStorage(STORAGE_KEYS.agency, defaultAgencySettings));
+    setAgency({ ...defaultAgencySettings, ...readStorage(STORAGE_KEYS.agency, defaultAgencySettings) });
     setClients(readStorage(STORAGE_KEYS.clients, []));
     setTeamMembers(readStorage(STORAGE_KEYS.team, []));
+    setPricingProfiles(readStorage(STORAGE_KEYS.pricingProfiles, []));
     setQuotes(readStorage(STORAGE_KEYS.quotes, []));
     setHydrated(true);
   }, []);
@@ -114,6 +129,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (hydrated) writeStorage(STORAGE_KEYS.team, teamMembers);
   }, [teamMembers, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) writeStorage(STORAGE_KEYS.pricingProfiles, pricingProfiles);
+  }, [pricingProfiles, hydrated]);
 
   useEffect(() => {
     if (hydrated) writeStorage(STORAGE_KEYS.quotes, quotes);
@@ -165,6 +184,25 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   const deleteTeamMember = useCallback((id: string) => {
     setTeamMembers((prev) => prev.filter((m) => m.id !== id));
+  }, []);
+
+  const getPricingProfile = useCallback(
+    (id: string) => pricingProfiles.find((p) => p.id === id),
+    [pricingProfiles]
+  );
+
+  const createPricingProfile = useCallback((draft: PricingProfileDraft) => {
+    const profile: PricingProfile = { id: genId(), createdAt: new Date().toISOString(), ...draft };
+    setPricingProfiles((prev) => [profile, ...prev]);
+    return profile;
+  }, []);
+
+  const updatePricingProfile = useCallback((id: string, patch: Partial<PricingProfileDraft>) => {
+    setPricingProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  }, []);
+
+  const deletePricingProfile = useCallback((id: string) => {
+    setPricingProfiles((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
   const getQuote = useCallback((id: string) => quotes.find((q) => q.id === id), [quotes]);
@@ -227,6 +265,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         valorTotal: original.valorTotal,
         flightItems: original.flightItems,
         status: "NOVA",
+        pricingProfileId: original.pricingProfileId,
         saleClosed: false,
         closedIda: null,
         closedVolta: null,
@@ -252,6 +291,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       createTeamMember,
       updateTeamMember,
       deleteTeamMember,
+      pricingProfiles,
+      getPricingProfile,
+      createPricingProfile,
+      updatePricingProfile,
+      deletePricingProfile,
       quotes,
       getQuote,
       createQuote,
@@ -274,6 +318,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       createTeamMember,
       updateTeamMember,
       deleteTeamMember,
+      pricingProfiles,
+      getPricingProfile,
+      createPricingProfile,
+      updatePricingProfile,
+      deletePricingProfile,
       quotes,
       getQuote,
       createQuote,

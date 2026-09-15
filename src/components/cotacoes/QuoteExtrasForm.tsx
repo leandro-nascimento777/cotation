@@ -24,6 +24,7 @@ export interface QuoteExtras {
   paymentMethod: PaymentMethodType | "";
   validityHours: number;
   priority: QuotePriorityType;
+  pricingProfileId: string | null;
   adults: number;
   children: number;
   infants: number;
@@ -79,7 +80,7 @@ interface QuoteExtrasFormProps {
 }
 
 export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
-  const { clients } = useAppData();
+  const { clients, pricingProfiles } = useAppData();
   const set = <K extends keyof QuoteExtras>(key: K, value: QuoteExtras[K]) =>
     onChange({ ...extras, [key]: value });
 
@@ -157,6 +158,26 @@ export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
               </option>
             ))}
           </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+          Tipo de cobrança
+          <select
+            value={extras.pricingProfileId ?? ""}
+            onChange={(e) => set("pricingProfileId", e.target.value || null)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
+          >
+            <option value="">Nenhum</option>
+            {pricingProfiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.nome}
+              </option>
+            ))}
+          </select>
+          {pricingProfiles.length === 0 ? (
+            <span className="text-[11px] font-normal text-slate-400">
+              Crie perfis em Configurações → Financeiro.
+            </span>
+          ) : null}
         </label>
         <Field
           label="Destino"
