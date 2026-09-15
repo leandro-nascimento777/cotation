@@ -113,7 +113,7 @@ export function ThemeModal({
         nextSteps: nextSteps.trim(),
       });
       toast.success("Proposta gerada.");
-      onGenerated(share as ProposalShareRecord);
+      onGenerated(share);
     } catch {
       toast.error("Falha ao gerar o link da proposta.");
     } finally {

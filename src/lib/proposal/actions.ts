@@ -88,6 +88,7 @@ export async function saveProposalShare(input: SaveProposalShareInput) {
     where: { quoteLocalId: input.quoteLocalId },
     create: { quoteLocalId: input.quoteLocalId, ...data },
     update: data,
+    include: { temporaryLinks: { orderBy: { createdAt: "desc" } } },
   });
 }
 
