@@ -123,7 +123,7 @@ export function PreviewPanel({
             onClick={() => onManageProposal("theme")}
             className="mt-1 flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700"
           >
-            <Link2 className="h-3.5 w-3.5" /> Montar Proposta Comercial
+            <Link2 className="h-3.5 w-3.5" /> Configurar Proposta
           </button>
         </div>
       ) : (
@@ -142,20 +142,20 @@ export function PreviewPanel({
           ) : (
             <p className="text-xs text-slate-500">Aguardando resposta do cliente.</p>
           )}
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => onManageProposal("share")}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700"
-            >
-              <Link2 className="h-3.5 w-3.5" /> Compartilhar
-            </button>
+          <div className="flex flex-col items-center gap-2">
             <button
               type="button"
               onClick={() => onManageProposal("theme")}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white"
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700"
             >
-              Editar tema
+              <Link2 className="h-3.5 w-3.5" /> Configurar Proposta
+            </button>
+            <button
+              type="button"
+              onClick={() => onManageProposal("share")}
+              className="text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline"
+            >
+              Ver link já gerado
             </button>
           </div>
         </div>
