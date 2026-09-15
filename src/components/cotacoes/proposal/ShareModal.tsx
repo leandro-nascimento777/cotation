@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { createTemporaryLink, getProposalShareByQuote, revokeTemporaryLink } from "@/lib/proposal/actions";
 import { ProposalShareRecord } from "@/lib/proposal/types";
-import { Check, Copy, Loader2, Trash2, X } from "lucide-react";
+import { AlertCircle, Check, Clock, Copy, Globe, Link2, Loader2, Plus, Trash2, X } from "lucide-react";
 
 interface ShareModalProps {
   share: ProposalShareRecord;
@@ -34,9 +34,9 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+      className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
     >
-      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
       {copied ? "Copiado!" : "Copiar"}
     </button>
   );
@@ -89,79 +89,92 @@ export function ShareModal({ share: initialShare, onClose, onUpdated }: ShareMod
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+        className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
       >
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <div className="flex items-start justify-between px-6 pt-6">
           <div>
-            <h2 className="text-sm font-semibold text-slate-800">Compartilhar Proposta</h2>
-            <p className="text-xs text-slate-500">Cotação {share.numero}</p>
+            <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
+              <Link2 className="h-5 w-5 text-lime-500" /> Compartilhar Proposta
+            </h2>
+            <p className="mt-1.5 text-sm text-slate-500">
+              Compartilhe o acesso à proposta comercial {share.numero} via link permanente ou temporário.
+            </p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-4 w-4" />
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <div className="mb-5">
-            <p className="text-xs font-semibold text-slate-700">Link Permanente</p>
-            <p className="mb-2 text-xs text-slate-500">Link fixo de acesso à proposta. Sempre acessível enquanto a cotação existir.</p>
-            <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-2">
-              <span className="min-w-0 flex-1 truncate font-mono text-xs text-slate-700">{permanentUrl}</span>
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+              <Globe className="h-4 w-4 text-lime-500" /> Link Permanente
+            </h3>
+            <p className="mt-1 mb-3 text-sm text-slate-500">
+              Link fixo de acesso à proposta. Sempre acessível enquanto a cotação existir.
+            </p>
+            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2">
+              <span className="min-w-0 flex-1 truncate px-1 font-mono text-sm text-slate-700">{permanentUrl}</span>
               <CopyButton text={permanentUrl} />
             </div>
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-slate-700">Links Temporários</p>
-            <p className="mb-2 text-xs text-slate-500">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+              <Clock className="h-4 w-4 text-amber-500" /> Links Temporários
+            </h3>
+            <p className="mt-1 mb-3 text-sm text-slate-500">
               Gere links com expiração de 24h que podem ser revogados a qualquer momento.
             </p>
 
+            <button
+              type="button"
+              onClick={handleCreateTemporary}
+              disabled={creating}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1e1b4b] px-4 py-3 text-sm font-bold text-white hover:bg-[#28234f] disabled:opacity-60"
+            >
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Gerar Link Temporário
+            </button>
+
             {activeTemporaryLinks.length === 0 ? (
-              <p className="mb-2 text-xs text-slate-400">Nenhum link temporário ativo.</p>
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
+                <AlertCircle className="h-6 w-6 text-slate-300" />
+                <p className="text-sm text-slate-400">Nenhum link temporário ativo.</p>
+              </div>
             ) : (
-              <div className="mb-2 flex flex-col gap-2">
+              <div className="mt-3 flex flex-col gap-2">
                 {activeTemporaryLinks.map((link) => {
                   const url = `${publicOrigin()}/proposta/h/${link.token}`;
                   return (
-                    <div key={link.id} className="rounded-lg bg-slate-50 p-2">
+                    <div key={link.id} className="rounded-lg border border-slate-200 bg-white p-2">
                       <div className="flex items-center gap-2">
-                        <span className="min-w-0 flex-1 truncate font-mono text-xs text-slate-700">{url}</span>
+                        <span className="min-w-0 flex-1 truncate px-1 font-mono text-xs text-slate-700">{url}</span>
                         <CopyButton text={url} />
                         <button
                           type="button"
                           onClick={() => handleRevoke(link.id)}
                           disabled={revokingId === link.id}
                           title="Revogar"
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          className="shrink-0 rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
                         >
                           {revokingId === link.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                         </button>
                       </div>
-                      <p className="mt-1 text-[11px] text-slate-400">{formatTimeLeft(link.expiresAt, now)}</p>
+                      <p className="mt-1 px-1 text-[11px] text-slate-400">{formatTimeLeft(link.expiresAt, now)}</p>
                     </div>
                   );
                 })}
               </div>
             )}
-
-            <button
-              type="button"
-              onClick={handleCreateTemporary}
-              disabled={creating}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-            >
-              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              Gerar Link Temporário
-            </button>
           </div>
         </div>
 
-        <div className="flex justify-end border-t border-slate-100 px-5 py-3">
+        <div className="flex justify-end border-t border-slate-100 px-6 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
           >
             Fechar
           </button>

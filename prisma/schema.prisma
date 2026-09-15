@@ -246,6 +246,9 @@ model ProposalShare {
   coverImageUrl String?
   coverTitle    String
   coverSubtitle String?
+  /// Instruções editáveis pelo agente, exibidas no rodapé da proposta
+  /// pública ("Próximos Passos") — uma por linha.
+  nextSteps     String?
 
   selectedIdaRowId    String?
   selectedIdaFareId   String?

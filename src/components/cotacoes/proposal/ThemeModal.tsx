@@ -8,7 +8,17 @@ import { DEFAULT_THEME_ID, PROPOSAL_THEMES } from "@/lib/proposal/themes";
 import { QuoteExtras } from "@/components/cotacoes/QuoteExtrasForm";
 import { AgencySettings } from "@/lib/store/types";
 import { QuoteItem } from "@/lib/types";
-import { Check, ImageUp, Loader2, X } from "lucide-react";
+import { Check, CloudUpload, Loader2, X } from "lucide-react";
+
+const DEFAULT_NEXT_STEPS = [
+  "Escolha a opção final (com ou sem extras).",
+  "Envie os dados dos passageiros: nome completo, nascimento, documento.",
+  "Confirme a forma de pagamento e efetue o pagamento para garantir a reserva.",
+  "Receba confirmações e vouchers por e-mail/WhatsApp.",
+].join("\n");
+
+const TITLE_MAX = 40;
+const SUBTITLE_MAX = 80;
 
 interface ThemeModalProps {
   quoteId: string;
@@ -33,10 +43,11 @@ export function ThemeModal({
 }: ThemeModalProps) {
   const [themeId, setThemeId] = useState(existingShare?.themeId ?? DEFAULT_THEME_ID);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(existingShare?.coverImageUrl ?? null);
-  const [coverTitle, setCoverTitle] = useState(existingShare?.coverTitle ?? "Proposta de Viagem");
+  const [coverTitle, setCoverTitle] = useState(existingShare?.coverTitle ?? "PROPOSTA DE VIAGEM");
   const [coverSubtitle, setCoverSubtitle] = useState(
-    existingShare?.coverSubtitle ?? (extras.destino ? `Destino: ${extras.destino}` : "")
+    existingShare?.coverSubtitle ?? "Sua viagem, do planejamento ao embarque."
   );
+  const [nextSteps, setNextSteps] = useState(existingShare?.nextSteps ?? DEFAULT_NEXT_STEPS);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -97,8 +108,9 @@ export function ThemeModal({
           : null,
         themeId,
         coverImageUrl,
-        coverTitle: coverTitle.trim() || "Proposta de Viagem",
+        coverTitle: coverTitle.trim() || "PROPOSTA DE VIAGEM",
         coverSubtitle: coverSubtitle.trim(),
+        nextSteps: nextSteps.trim(),
       });
       toast.success("Proposta gerada.");
       onGenerated(share as ProposalShareRecord);
@@ -113,100 +125,129 @@ export function ThemeModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
       >
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <h2 className="text-sm font-semibold text-slate-800">Montar Proposta Comercial</h2>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-4 w-4" />
+        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Configurar Proposta</h2>
+            <p className="mt-0.5 text-sm text-slate-500">Personalize a capa e os próximos passos da proposta web</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <p className="mb-2 text-xs font-semibold text-slate-500">Tema da capa</p>
-          <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {PROPOSAL_THEMES.map((theme) => (
-              <button
-                key={theme.id}
-                type="button"
-                onClick={() => handleSelectPreset(theme.id)}
-                className={`relative flex h-16 items-end overflow-hidden rounded-lg p-2 text-xs font-semibold text-white ring-2 transition-shadow ${
-                  themeId === theme.id && coverImageUrl === null ? "ring-teal-500" : "ring-transparent hover:ring-slate-300"
-                }`}
-                style={{ background: theme.gradient }}
-              >
-                {theme.label}
-                {themeId === theme.id && coverImageUrl === null ? (
-                  <Check className="absolute top-1.5 right-1.5 h-3.5 w-3.5" />
-                ) : null}
-              </button>
-            ))}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          <p className="mb-3 text-xs font-bold tracking-wide text-slate-500 uppercase">Imagem de Capa</p>
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex aspect-4/3 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-slate-300 text-slate-500 transition-colors hover:border-slate-400 hover:text-slate-600"
+            >
+              {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <CloudUpload className="h-6 w-6" />}
+              <span className="text-sm font-semibold">Upload Capa</span>
+              <span className="text-xs">Até 5MB</span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleUpload(e.target.files?.[0])}
+            />
+
+            {coverImageUrl ? (
+              <div className="relative aspect-4/3 overflow-hidden rounded-xl ring-2 ring-slate-900">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={coverImageUrl} alt="Capa enviada" className="h-full w-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 py-2">
+                  <span className="text-xs font-semibold text-white">Sua imagem</span>
+                </div>
+                <span className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
+                  <Check className="h-3 w-3" />
+                </span>
+              </div>
+            ) : null}
+
+            {PROPOSAL_THEMES.map((theme) => {
+              const selected = themeId === theme.id && !coverImageUrl;
+              return (
+                <button
+                  key={theme.id}
+                  type="button"
+                  onClick={() => handleSelectPreset(theme.id)}
+                  className={`relative aspect-4/3 overflow-hidden rounded-xl ring-2 transition-shadow ${
+                    selected ? "ring-slate-900" : "ring-slate-200 hover:ring-slate-300"
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={theme.imageUrl} alt={theme.label} className="h-full w-full object-cover" loading="lazy" />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 py-2 text-left">
+                    <span className="text-xs font-semibold text-white">{theme.label}</span>
+                  </div>
+                  {selected ? (
+                    <span className="absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900 text-white">
+                      <Check className="h-3 w-3" />
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
 
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className={`mb-4 flex h-20 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-xs font-medium transition-colors ${
-              coverImageUrl ? "border-teal-400 bg-teal-50 text-teal-700" : "border-slate-300 text-slate-500 hover:border-slate-400"
-            }`}
-          >
-            {uploading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : coverImageUrl ? (
-              <>
-                <Check className="h-4 w-4" /> Imagem enviada — usar como capa
-              </>
-            ) : (
-              <>
-                <ImageUp className="h-4 w-4" /> Enviar imagem própria (até 5MB)
-              </>
-            )}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => handleUpload(e.target.files?.[0])}
-          />
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-semibold text-slate-800">Título da Capa</label>
+            <input
+              value={coverTitle}
+              maxLength={TITLE_MAX}
+              onChange={(e) => setCoverTitle(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-slate-500 focus:outline-none"
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              {coverTitle.length}/{TITLE_MAX} caracteres
+            </p>
+          </div>
 
-          <div className="grid grid-cols-1 gap-3">
-            <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-              Título da capa
-              <input
-                value={coverTitle}
-                onChange={(e) => setCoverTitle(e.target.value)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-              Subtítulo da capa
-              <input
-                value={coverSubtitle}
-                onChange={(e) => setCoverSubtitle(e.target.value)}
-                placeholder="Ex: Destino: Belo Horizonte"
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
-              />
-            </label>
+          <div className="mb-6">
+            <label className="mb-1 block text-sm font-semibold text-slate-800">Subtítulo da Capa</label>
+            <input
+              value={coverSubtitle}
+              maxLength={SUBTITLE_MAX}
+              onChange={(e) => setCoverSubtitle(e.target.value)}
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-slate-500 focus:outline-none"
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              {coverSubtitle.length}/{SUBTITLE_MAX} caracteres
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-800">Próximos Passos</label>
+            <p className="mb-2 text-xs text-slate-500">
+              Instruções exibidas no rodapé da proposta web indicando ao cliente o que fazer após receber a cotação.
+            </p>
+            <textarea
+              value={nextSteps}
+              onChange={(e) => setNextSteps(e.target.value)}
+              rows={4}
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-slate-500 focus:outline-none"
+            />
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-          >
+        <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+          <button type="button" onClick={onClose} className="px-3 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800">
             Cancelar
           </button>
           <button
             type="button"
             onClick={handleConfirm}
             disabled={saving || uploading}
-            className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-xl bg-lime-400 px-4 py-2.5 text-sm font-bold text-slate-900 hover:bg-lime-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Confirmar e Gerar Link
           </button>
         </div>

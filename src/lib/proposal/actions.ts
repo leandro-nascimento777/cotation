@@ -47,6 +47,7 @@ export interface SaveProposalShareInput {
   coverImageUrl: string | null;
   coverTitle: string;
   coverSubtitle: string;
+  nextSteps: string;
 }
 
 /** Cria (ou atualiza, se a cotação já tinha uma) o snapshot público da
@@ -73,6 +74,7 @@ export async function saveProposalShare(input: SaveProposalShareInput) {
     coverImageUrl: input.coverImageUrl,
     coverTitle: input.coverTitle,
     coverSubtitle: input.coverSubtitle || null,
+    nextSteps: input.nextSteps || null,
     selectedIdaRowId: null,
     selectedIdaFareId: null,
     selectedVoltaRowId: null,

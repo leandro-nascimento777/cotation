@@ -36,13 +36,13 @@ export function ProposalPage({ share }: { share: ProposalShareRow }) {
     <div className="min-h-screen bg-slate-100 pb-16">
       <div
         className="relative flex flex-col justify-end px-6 py-14 sm:px-10"
-        style={
-          share.coverImageUrl
-            ? { backgroundImage: `url(${share.coverImageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
-            : { background: theme.gradient }
-        }
+        style={{
+          backgroundImage: `url(${share.coverImageUrl || theme.imageUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       >
-        {share.coverImageUrl ? <div className="absolute inset-0 bg-black/40" /> : null}
+        <div className="absolute inset-0 bg-black/45" />
         <div className="relative mx-auto w-full max-w-3xl text-white">
           <p className="text-xs font-semibold tracking-wide text-white/80 uppercase">
             {agencySnap.agencyName || "Proposta Comercial"}
@@ -85,23 +85,22 @@ export function ProposalPage({ share }: { share: ProposalShareRow }) {
           {share.observacoes ? <p className="mt-2 text-xs text-slate-500">{share.observacoes}</p> : null}
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-slate-700">Próximos Passos</h2>
-          <ol className="flex flex-col gap-2 text-sm text-slate-600">
-            <li>
-              <b className="text-slate-800">1.</b> Escolha a opção de voo acima e aprove a viagem.
-            </li>
-            <li>
-              <b className="text-slate-800">2.</b> Envie os dados dos passageiros (nome completo, nascimento, documento).
-            </li>
-            <li>
-              <b className="text-slate-800">3.</b> Confirme a forma de pagamento combinada com a agência.
-            </li>
-            <li>
-              <b className="text-slate-800">4.</b> Receba a confirmação e o voucher por e-mail/WhatsApp.
-            </li>
-          </ol>
-        </section>
+        {share.nextSteps ? (
+          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-3 text-sm font-semibold text-slate-700">Próximos Passos</h2>
+            <ol className="flex flex-col gap-2 text-sm text-slate-600">
+              {share.nextSteps
+                .split("\n")
+                .map((step) => step.trim())
+                .filter(Boolean)
+                .map((step, idx) => (
+                  <li key={idx}>
+                    <b className="text-slate-800">{idx + 1}.</b> {step}
+                  </li>
+                ))}
+            </ol>
+          </section>
+        ) : null}
 
         <footer className="pt-4 text-center text-xs text-slate-400">
           {[agencySnap.agencyName, agencySnap.phone, agencySnap.email].filter(Boolean).join(" · ")}
