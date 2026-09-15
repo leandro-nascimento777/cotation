@@ -93,10 +93,10 @@ export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="@container rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <h2 className="mb-3 text-sm font-semibold text-slate-700">Dados da cotação</h2>
 
-      <div className="mb-1 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mb-1 grid grid-cols-1 gap-3 @lg:grid-cols-2 @3xl:grid-cols-3">
         <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
           Nome do cliente
           <input
@@ -139,7 +139,7 @@ export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2 @4xl:grid-cols-3">
         <Field label="Vendedor(a)" value={extras.sellerName} onChange={(v) => set("sellerName", v)} />
         <Field label="Telefone do responsável" value={extras.sellerPhone} onChange={(v) => set("sellerPhone", v)} />
         <Field label="E-mail" value={extras.sellerEmail} onChange={(v) => set("sellerEmail", v)} />

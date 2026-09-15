@@ -231,7 +231,7 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   const agencyInfoPreview = buildAgencyInfoForQuote(agency, extras);
 
   return (
-    <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-2">
+    <div className="mx-auto grid max-w-[1600px] grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[3fr_2fr]">
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <QuoteTypeSelector value="VOO" />
