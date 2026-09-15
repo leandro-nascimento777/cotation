@@ -4,6 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, PlaneTakeoff, Receipt, Settings, UserCog, Users } from "lucide-react";
 import { ComponentType } from "react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from "@/components/ui/sidebar";
 
 interface NavItem {
   href: string;
@@ -26,36 +37,55 @@ function isActive(pathname: string, item: NavItem): boolean {
   return pathname === item.href;
 }
 
-export function Sidebar() {
+/** Sidebar retrátil (shadcn/ui) — colapsa pra uma barra só de ícones em
+ * telas médias/grandes (ver botão em PageHeader). No mobile continua
+ * usando o BottomNav abaixo, não o modo "sheet" do shadcn. */
+export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-56 shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
-      <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600">
-          <PlaneTakeoff className="h-4 w-4 text-white" />
-        </div>
-        <span className="text-sm font-bold text-slate-900">Cotation</span>
-      </div>
-      <nav className="flex flex-1 flex-col gap-1 p-3">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(pathname, item);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                active ? "bg-teal-50 text-teal-700" : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+    <Sidebar collapsible="icon" className="border-slate-200">
+      <SidebarHeader className="border-b border-slate-200 px-2 py-3">
+        <Link href="/" className="flex items-center gap-2 overflow-hidden px-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-600">
+            <PlaneTakeoff className="h-4 w-4 text-white" />
+          </div>
+          <span className="truncate text-sm font-bold text-slate-900 group-data-[collapsible=icon]:hidden">
+            Cotation
+          </span>
+        </Link>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {NAV_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(pathname, item);
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      render={<Link href={item.href} />}
+                      isActive={active}
+                      tooltip={item.label}
+                      className={
+                        active
+                          ? "bg-teal-50 text-teal-700 hover:bg-teal-50 hover:text-teal-700"
+                          : "text-slate-600"
+                      }
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarRail />
+    </Sidebar>
   );
 }
 

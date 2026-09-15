@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { AppDataProvider } from "@/lib/store/AppDataContext";
 import { AppShell } from "@/components/shell/AppShell";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,7 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <AppDataProvider>
-          <AppShell>{children}</AppShell>
+          <TooltipProvider>
+            <AppShell>{children}</AppShell>
+          </TooltipProvider>
           <Toaster position="top-right" richColors />
         </AppDataProvider>
       </body>
