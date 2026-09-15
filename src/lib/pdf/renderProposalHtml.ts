@@ -34,6 +34,7 @@ body { margin: 0; font-family: "Helvetica Neue", Arial, sans-serif; color: #1e29
   border-radius: 18px;
   overflow: hidden;
 }
+.cover-glass { background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 18px 20px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .cover-title { font-size: 30px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; line-height: 1; margin: 0 0 6px; }
 .cover-subtitle { font-size: 13px; color: rgba(255,255,255,0.88); margin: 0; font-weight: 500; }
 .cover-meta { border-top: 1px solid rgba(255,255,255,0.2); margin-top: 16px; padding-top: 12px; }
@@ -139,12 +140,14 @@ export function renderProposalHtml(data: ProposalPdfData): string {
 </head>
 <body>
   <div class="doc">
-    <div class="cover" style="background-image: linear-gradient(to right, rgba(0,0,0,.85), rgba(0,0,0,.5) 55%, rgba(0,0,0,.15)), linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0) 55%), url('${escapeHtml(data.coverImageUrl)}')">
-      <p class="cover-title">${escapeHtml(data.coverTitle)}</p>
-      ${data.coverSubtitle ? `<p class="cover-subtitle">${escapeHtml(data.coverSubtitle)}</p>` : ""}
-      <div class="cover-meta">
-        <p class="numero">${escapeHtml(data.numero)}</p>
-        <p class="agencia">${escapeHtml(data.agencyName)}</p>
+    <div class="cover" style="background-image: linear-gradient(to top, rgba(0,0,0,.25), rgba(0,0,0,0) 55%), url('${escapeHtml(data.coverImageUrl)}')">
+      <div class="cover-glass">
+        <p class="cover-title">${escapeHtml(data.coverTitle)}</p>
+        ${data.coverSubtitle ? `<p class="cover-subtitle">${escapeHtml(data.coverSubtitle)}</p>` : ""}
+        <div class="cover-meta">
+          <p class="numero">${escapeHtml(data.numero)}</p>
+          <p class="agencia">${escapeHtml(data.agencyName)}</p>
+        </div>
       </div>
     </div>
 

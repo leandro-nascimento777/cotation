@@ -61,8 +61,10 @@ export function ProposalPage({ share }: { share: ProposalShareRow }) {
             className="relative flex min-h-[360px] flex-col justify-end bg-cover bg-center px-6 py-10 text-white sm:min-h-[400px] sm:px-10 sm:py-14"
             style={{ backgroundImage: `url(${share.coverImageUrl || theme.imageUrl})` }}
           >
-            <div className="absolute inset-0 z-0 bg-gradient-to-r from-black/85 via-black/55 to-transparent" />
-            <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
+            {/* Vinheta bem sutil só pra suavizar a transição com a onda —
+                o texto em si fica legível pelo painel "vidro" abaixo, não
+                por escurecer a foto inteira. */}
+            <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
             <div
               className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 select-none"
               style={{ transform: "scaleY(-1)" }}
@@ -74,18 +76,20 @@ export function ProposalPage({ share }: { share: ProposalShareRow }) {
               </svg>
             </div>
 
-            <div className="relative z-10 flex flex-col justify-end space-y-6 pb-8">
-              <div className="max-w-xl space-y-2">
-                <h1 className="text-3xl leading-none font-black tracking-tight uppercase sm:text-4xl md:text-5xl">
-                  {share.coverTitle}
-                </h1>
-                {share.coverSubtitle ? (
-                  <p className="text-sm leading-relaxed font-medium text-white/85 sm:text-base">{share.coverSubtitle}</p>
-                ) : null}
-              </div>
-              <div className="mt-2 border-t border-white/10 pt-4">
-                <p className="text-base font-bold tracking-wide sm:text-lg">{share.numero}</p>
-                <p className="text-xs font-semibold text-white/70 sm:text-sm">{agencySnap.agencyName}</p>
+            <div className="relative z-10 flex flex-col justify-end pb-8">
+              <div className="max-w-xl space-y-4 rounded-2xl border border-white/15 bg-black/15 p-5 shadow-lg backdrop-blur-md sm:p-6">
+                <div className="space-y-2">
+                  <h1 className="text-3xl leading-none font-black tracking-tight uppercase sm:text-4xl md:text-5xl">
+                    {share.coverTitle}
+                  </h1>
+                  {share.coverSubtitle ? (
+                    <p className="text-sm leading-relaxed font-medium text-white/85 sm:text-base">{share.coverSubtitle}</p>
+                  ) : null}
+                </div>
+                <div className="border-t border-white/15 pt-4">
+                  <p className="text-base font-bold tracking-wide sm:text-lg">{share.numero}</p>
+                  <p className="text-xs font-semibold text-white/70 sm:text-sm">{agencySnap.agencyName}</p>
+                </div>
               </div>
             </div>
           </div>
