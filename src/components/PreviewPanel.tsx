@@ -5,7 +5,7 @@ import { AgencyInfo, FlightLeg, QuoteItem } from "@/lib/types";
 import { buildWhatsAppText } from "@/lib/whatsapp";
 import { groupQuoteItems } from "@/lib/groupQuoteItems";
 import { formatCurrencyBRL, validityDateTimePtBR } from "@/lib/format";
-import { Check, Copy, Download, FileText, MessageCircle } from "lucide-react";
+import { Check, Copy, Download, FileText, Link2, MessageCircle } from "lucide-react";
 
 interface PreviewPanelProps {
   items: QuoteItem[];
@@ -16,7 +16,7 @@ interface PreviewPanelProps {
 }
 
 export function PreviewPanel({ items, agency, onDownloadPdf, pdfLoading, pdfError }: PreviewPanelProps) {
-  const [tab, setTab] = useState<"whatsapp" | "pdf">("whatsapp");
+  const [tab, setTab] = useState<"whatsapp" | "pdf" | "link">("whatsapp");
   const [copied, setCopied] = useState(false);
   const selected = items.filter((i) => i.selected);
   const text = buildWhatsAppText(items, agency);
@@ -47,6 +47,14 @@ export function PreviewPanel({ items, agency, onDownloadPdf, pdfLoading, pdfErro
           >
             <FileText className="h-3.5 w-3.5" /> PDF
           </button>
+          <button
+            onClick={() => setTab("link")}
+            className={`flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+              tab === "link" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500"
+            }`}
+          >
+            <Link2 className="h-3.5 w-3.5" /> Link
+          </button>
         </div>
 
         {tab === "whatsapp" ? (
@@ -58,7 +66,7 @@ export function PreviewPanel({ items, agency, onDownloadPdf, pdfLoading, pdfErro
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? "Copiado!" : "Copiar texto"}
           </button>
-        ) : (
+        ) : tab === "pdf" ? (
           <button
             onClick={onDownloadPdf}
             disabled={selected.length === 0 || pdfLoading}
@@ -67,7 +75,7 @@ export function PreviewPanel({ items, agency, onDownloadPdf, pdfLoading, pdfErro
             <Download className="h-3.5 w-3.5" />
             {pdfLoading ? "Gerando…" : "Baixar PDF"}
           </button>
-        )}
+        ) : null}
       </div>
 
       {pdfError ? (
@@ -80,8 +88,16 @@ export function PreviewPanel({ items, agency, onDownloadPdf, pdfLoading, pdfErro
             {formatWhatsAppPreview(text)}
           </div>
         </div>
-      ) : (
+      ) : tab === "pdf" ? (
         <PdfMockPreview items={selected} agency={agency} />
+      ) : (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-14 text-center">
+          <Link2 className="h-6 w-6 text-slate-300" />
+          <p className="text-sm font-medium text-slate-500">Link público — em breve</p>
+          <p className="max-w-xs text-xs text-slate-400">
+            Um link que o cliente pode abrir pra ver a cotação como página web, sem precisar de PDF nem WhatsApp.
+          </p>
+        </div>
       )}
     </div>
   );
