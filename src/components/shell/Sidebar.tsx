@@ -14,6 +14,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 interface NavItem {
@@ -45,15 +46,18 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-slate-200">
-      <SidebarHeader className="border-b border-slate-200 px-2 py-3">
-        <Link href="/" className="flex items-center gap-2 overflow-hidden px-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-600">
-            <PlaneTakeoff className="h-4 w-4 text-white" />
-          </div>
-          <span className="truncate text-sm font-bold text-slate-900 group-data-[collapsible=icon]:hidden">
-            Cotation
-          </span>
-        </Link>
+      <SidebarHeader className="border-b border-slate-200 p-2">
+        <div className="flex items-center justify-between gap-2">
+          <Link href="/" className="flex min-w-0 items-center gap-2 overflow-hidden">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-600">
+              <PlaneTakeoff className="h-4 w-4 text-white" />
+            </div>
+            <span className="truncate text-sm font-bold text-slate-900 group-data-[collapsible=icon]:hidden">
+              Cotation
+            </span>
+          </Link>
+          <SidebarTrigger className="shrink-0 text-slate-500 hover:bg-slate-100 hover:text-slate-700 group-data-[collapsible=icon]:hidden" />
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
