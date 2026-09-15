@@ -99,6 +99,24 @@ export async function getProposalShareByQuote(quoteLocalId: string) {
   });
 }
 
+/** Decisões do cliente pras cotações informadas — usado pelo Kanban
+ * (/cotacoes) pra mover automaticamente pra "Aprovada" e pré-preencher a
+ * escolha de voo assim que o agente reabrir a tela. */
+export async function getProposalDecisions(quoteLocalIds: string[]) {
+  if (quoteLocalIds.length === 0) return [];
+  return prisma.proposalShare.findMany({
+    where: { quoteLocalId: { in: quoteLocalIds }, clientDecision: { not: null } },
+    select: {
+      quoteLocalId: true,
+      clientDecision: true,
+      selectedIdaRowId: true,
+      selectedIdaFareId: true,
+      selectedVoltaRowId: true,
+      selectedVoltaFareId: true,
+    },
+  });
+}
+
 export async function createTemporaryLink(shareId: string) {
   return prisma.proposalTemporaryLink.create({
     data: {

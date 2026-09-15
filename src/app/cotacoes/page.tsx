@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { StatTile } from "@/components/dashboard/StatTile";
 import { NewQuoteButton } from "@/components/shell/NewQuoteButton";
 import { QuoteDetailModal } from "@/components/cotacoes/QuoteDetailModal";
+import { getProposalDecisions } from "@/lib/proposal/actions";
 import { formatCurrencyBRL } from "@/lib/format";
 import {
   QUOTE_PRIORITY_LABEL,
@@ -53,6 +54,32 @@ export default function CotacoesPage() {
 
   const clientNameById = useMemo(() => new Map(clients.map((c) => [c.id, c.nomeCompleto])), [clients]);
   const clientPhoneById = useMemo(() => new Map(clients.map((c) => [c.id, c.telefone])), [clients]);
+
+  // Ao carregar o board, sincroniza aprovações que o cliente deu na
+  // proposta pública: move a cotação pra "Aprovada" e pré-preenche a
+  // escolha de ida/volta (se o agente ainda não tiver fechado a venda),
+  // pra já aparecer certo quando ele abrir "Fechar venda".
+  useEffect(() => {
+    if (!hydrated || quotes.length === 0) return;
+    getProposalDecisions(quotes.map((q) => q.id)).then((decisions) => {
+      for (const decision of decisions) {
+        if (decision.clientDecision !== "APROVADO") continue;
+        const quote = quotes.find((q) => q.id === decision.quoteLocalId);
+        if (!quote || quote.status === "APROVADA") continue;
+
+        const patch: Partial<Quote> = { status: "APROVADA" };
+        const canPrefill = !quote.saleClosed && !quote.closedIda && !quote.closedVolta;
+        if (canPrefill && decision.selectedIdaRowId && decision.selectedIdaFareId) {
+          patch.closedIda = { rowId: decision.selectedIdaRowId, fareId: decision.selectedIdaFareId };
+        }
+        if (canPrefill && decision.selectedVoltaRowId && decision.selectedVoltaFareId) {
+          patch.closedVolta = { rowId: decision.selectedVoltaRowId, fareId: decision.selectedVoltaFareId };
+        }
+        updateQuote(quote.id, patch);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
