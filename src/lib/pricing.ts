@@ -27,7 +27,7 @@ export interface PricingBreakdown {
  * print, aplicando as regras de um perfil de cobrança (Configurações >
  * Financeiro). Função pura — sem acesso a store nem I/O — pra poder ser
  * usada tanto num simulador quanto no fluxo real da cotação. */
-export function calculatePricing(input: PricingInput, settings: PricingRules): PricingBreakdown {
+export const calculatePricing = (input: PricingInput, settings: PricingRules): PricingBreakdown => {
   const tarifaLiquida = Math.max(0, input.tarifaLiquida);
   const passageiros = Math.max(1, input.passageiros);
 
@@ -40,11 +40,10 @@ export function calculatePricing(input: PricingInput, settings: PricingRules): P
   const feeServico = settings.feeServicoModo === "POR_PASSAGEIRO" ? feeBase * passageiros : feeBase;
 
   const markup = (tarifaLiquida * settings.markupPercent) / 100;
-
   const taxasAgencia = duRav + feeServico + markup;
   const impostoRetido = (taxasAgencia * settings.impostoRetidoPercent) / 100;
 
-  const subtotal = tarifaLiquida + duRav + feeServico + markup + impostoRetido;
+  const subtotal = tarifaLiquida + taxasAgencia + impostoRetido;
   const gateway = input.pagamentoCartaoAgencia ? (subtotal * settings.gatewayPercent) / 100 : 0;
 
   return {
@@ -57,4 +56,4 @@ export function calculatePricing(input: PricingInput, settings: PricingRules): P
     gateway,
     precoVenda: subtotal + gateway,
   };
-}
+};

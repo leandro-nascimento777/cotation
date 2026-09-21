@@ -55,19 +55,19 @@ export type LegKind = "combo" | "ida" | "volta";
 
 /** Classifica uma linha/item: "combo" (ida+volta com 1 preço), "ida" (só
  * trecho de ida) ou "volta" (só trecho de volta, de uma tabela separada). */
-export function legKind(row: { ida?: FlightLeg; volta?: FlightLeg }): LegKind {
+export const legKind = (row: { ida?: FlightLeg; volta?: FlightLeg }): LegKind => {
   if (row.ida && row.volta) return "combo";
   return row.volta ? "volta" : "ida";
-}
+};
 
 /** O trecho "principal" de uma linha/item pra exibições genéricas de uma
  * única perna (ex: linha só de ida, ou só de volta). Combos devem ser
  * tratados explicitamente (mostrando ida e volta), não via este helper. */
-export function primaryLeg(row: { ida?: FlightLeg; volta?: FlightLeg }): FlightLeg {
+export const primaryLeg = (row: { ida?: FlightLeg; volta?: FlightLeg }): FlightLeg => {
   const leg = row.ida ?? row.volta;
   if (!leg) throw new Error("Linha de voo sem nenhum trecho (ida/volta) preenchido.");
   return leg;
-}
+};
 
 export interface AgencyInfo {
   agencyName: string;
@@ -97,23 +97,18 @@ export const defaultAgencyInfo: AgencyInfo = {
   cadastur: "",
 };
 
-export function flightRowsToQuoteItems(rows: FlightRow[]): QuoteItem[] {
-  const items: QuoteItem[] = [];
-  for (const row of rows) {
-    for (const fare of row.fares) {
-      items.push({
-        rowId: row.id,
-        fareId: fare.id,
-        ida: row.ida,
-        volta: row.volta,
-        baggage: fare.baggage,
-        fareLabel: fare.fareLabel,
-        fareClass: fare.fareClass,
-        price: fare.price,
-        currency: fare.currency,
-        selected: false,
-      });
-    }
-  }
-  return items;
-}
+export const flightRowsToQuoteItems = (rows: FlightRow[]): QuoteItem[] =>
+  rows.flatMap((row) =>
+    row.fares.map((fare) => ({
+      rowId: row.id,
+      fareId: fare.id,
+      ida: row.ida,
+      volta: row.volta,
+      baggage: fare.baggage,
+      fareLabel: fare.fareLabel,
+      fareClass: fare.fareClass,
+      price: fare.price,
+      currency: fare.currency,
+      selected: false,
+    }))
+  );

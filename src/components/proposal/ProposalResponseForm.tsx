@@ -7,7 +7,9 @@ import { submitProposalResponse } from "@/lib/proposal/actions";
 import { formatCurrencyBRL } from "@/lib/format";
 import { ClosedFlightSelection } from "@/lib/store/types";
 import { QuoteItem } from "@/lib/types";
-import { AlertCircle, CheckCircle2, CircleCheck, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, CircleCheck, Loader2, ArrowRight } from "lucide-react";
+import { ProposalClientSnapshot, ProposalAgencySnapshot } from "@/lib/proposal/actions";
+import { TravelerCheckoutView } from "./checkout/TravelerCheckoutView";
 
 interface ProposalResponseFormProps {
   shareId: string;
@@ -17,23 +19,30 @@ interface ProposalResponseFormProps {
   paymentMethodLabel: string;
   agencyObservations: string;
   validityLabel: string;
+  adultsCount?: number;
+  childrenCount?: number;
+  infantsCount?: number;
+  clientSnapshot?: ProposalClientSnapshot | null;
+  agencySnapshot?: ProposalAgencySnapshot | null;
+  proposalNumero?: string;
+  destino?: string;
+  periodoInicio?: string | null;
+  periodoFim?: string | null;
 }
 
-function StepCard({ index, text }: { index: number; text: string }) {
-  return (
-    <div className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-indigo-500/20 hover:bg-slate-50">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white shadow-sm">
-        {index}
-      </div>
-      <div className="space-y-1">
-        <span className="block text-xs font-bold text-slate-400">Passo {index}</span>
-        <p className="text-xs leading-relaxed font-semibold text-slate-800">{text}</p>
-      </div>
+const StepCard = ({ index, text }: { index: number; text: string }) => (
+  <div className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 transition-all hover:border-indigo-500/20 hover:bg-slate-50">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white shadow-sm">
+      {index}
     </div>
-  );
-}
+    <div className="space-y-1">
+      <span className="block text-xs font-bold text-slate-400">Passo {index}</span>
+      <p className="text-xs leading-relaxed font-semibold text-slate-800">{text}</p>
+    </div>
+  </div>
+);
 
-export function ProposalResponseForm({
+export const ProposalResponseForm = ({
   shareId,
   flightItems,
   alreadyDecided,
@@ -41,7 +50,17 @@ export function ProposalResponseForm({
   paymentMethodLabel,
   agencyObservations,
   validityLabel,
-}: ProposalResponseFormProps) {
+  adultsCount = 1,
+  childrenCount = 0,
+  infantsCount = 0,
+  clientSnapshot = null,
+  agencySnapshot = null,
+  proposalNumero,
+  destino = "",
+  periodoInicio = null,
+  periodoFim = null,
+}: ProposalResponseFormProps) => {
+  const [stage, setStage] = useState<"flights" | "checkout">("flights");
   const [selection, setSelection] = useState<{
     selectedIda: ClosedFlightSelection | null;
     selectedVolta: ClosedFlightSelection | null;
@@ -53,6 +72,14 @@ export function ProposalResponseForm({
   const [done, setDone] = useState<"APROVADO" | "REVISAO" | null>(
     alreadyDecided ? (alreadyDecided.decision as "APROVADO" | "REVISAO") : null
   );
+
+  const selectedIdaItem = flightItems.find(
+    (i) => selection.selectedIda && i.rowId === selection.selectedIda.rowId && i.fareId === selection.selectedIda.fareId
+  ) ?? flightItems.find((i) => i.ida) ?? null;
+
+  const selectedVoltaItem = flightItems.find(
+    (i) => selection.selectedVolta && i.rowId === selection.selectedVolta.rowId && i.fareId === selection.selectedVolta.fareId
+  ) ?? flightItems.find((i) => i.volta) ?? null;
 
   const steps = (nextSteps || "")
     .split("\n")
@@ -81,9 +108,58 @@ export function ProposalResponseForm({
     }
   };
 
+  if (stage === "checkout") {
+    return (
+      <TravelerCheckoutView
+        shareId={shareId}
+        selectedIda={selection.selectedIda}
+        selectedVolta={selection.selectedVolta}
+        selectedIdaItem={selectedIdaItem}
+        selectedVoltaItem={selectedVoltaItem}
+        totalPrice={selection.total}
+        adultsCount={adultsCount}
+        childrenCount={childrenCount}
+        infantsCount={infantsCount}
+        clientSnapshot={clientSnapshot}
+        agencySnapshot={agencySnapshot}
+        proposalNumero={proposalNumero}
+        destino={destino}
+        periodoInicio={periodoInicio}
+        periodoFim={periodoFim}
+        onBackToFlights={() => setStage("flights")}
+        onSuccessOrder={() => {
+          setDone("APROVADO");
+        }}
+      />
+    );
+  }
+
   return (
     <>
       <FlightSelector items={flightItems} onChange={setSelection} />
+
+      {selection.complete && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-[#5E17EB]/30 bg-gradient-to-r from-purple-50 via-indigo-50/50 to-white p-5 shadow-md animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="space-y-0.5 text-center sm:text-left">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#5E17EB]">
+              Trechos selecionados
+            </span>
+            <p className="text-2xl font-black text-slate-900">
+              {formatCurrencyBRL(selection.total)}
+            </p>
+            <p className="text-xs text-slate-500">
+              Ida e volta escolhidas. Pronto para preencher os dados dos viajantes.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setStage("checkout")}
+            className="flex items-center gap-2 rounded-full bg-[#5E17EB] px-8 py-3.5 text-sm font-bold text-white shadow-lg transition-all hover:bg-[#4d13c7] hover:shadow-xl active:scale-[0.99] cursor-pointer"
+          >
+            Continuar para dados do passageiro <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {steps.length > 0 ? (
         <div className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">

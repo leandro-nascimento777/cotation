@@ -5,70 +5,41 @@ import { toast } from "sonner";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { StatusBadge } from "@/components/shell/StatusBadge";
 import { FlightList, LegLine } from "@/components/FlightList";
-import { QuoteExtrasForm, QuoteExtras } from "./QuoteExtrasForm";
+import { QuoteExtrasForm, QuoteExtras, quoteToExtras } from "./QuoteExtrasForm";
 import { CloseSaleForm } from "./CloseSaleForm";
 import { resolveQuoteClientId } from "@/lib/store/resolveQuoteClient";
 import { getProposalShareByQuote } from "@/lib/proposal/actions";
 import { ProposalShareRecord } from "@/lib/proposal/types";
 import { formatCurrencyBRL, validityDateTimePtBR } from "@/lib/format";
-import { Client, PAYMENT_METHOD_LABEL, QUOTE_PRIORITY_LABEL, Quote } from "@/lib/store/types";
+import { PAYMENT_METHOD_LABEL, QUOTE_PRIORITY_LABEL, Quote } from "@/lib/store/types";
 import { QuoteItem } from "@/lib/types";
 import { CheckCircle2, Luggage, PlaneLanding, PlaneTakeoff, Pencil, X } from "lucide-react";
 
-function toExtras(quote: Quote, client: Client | undefined): QuoteExtras {
-  return {
-    clientId: quote.clientId,
-    clientName: client?.nomeCompleto || "",
-    clientPhone: client?.telefone || "",
-    clientEmail: client?.email || "",
-    responsavelId: quote.responsavelId,
-    sellerName: quote.sellerName,
-    sellerEmail: quote.sellerEmail,
-    sellerPhone: quote.sellerPhone,
-    destino: quote.destino,
-    periodoInicio: quote.periodoInicio,
-    periodoFim: quote.periodoFim,
-    paymentMethod: quote.paymentMethod,
-    validityHours: quote.validityHours,
-    priority: quote.priority,
-    pricingProfileId: quote.pricingProfileId,
-    adults: quote.adults,
-    children: quote.children,
-    infants: quote.infants,
-    mensagemDestaque: quote.mensagemDestaque,
-    observacoes: quote.observacoes,
-  };
-}
+const InfoField = ({ label, value }: { label: string; value: string }) => (
+  <div>
+    <p className="text-xs font-semibold text-slate-500">{label}</p>
+    <p className="text-slate-800">{value}</p>
+  </div>
+);
 
-function InfoField({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs font-semibold text-slate-500">{label}</p>
-      <p className="text-slate-800">{value}</p>
-    </div>
-  );
-}
-
-function findItem(quote: Quote, sel: { rowId: string; fareId: string } | null): QuoteItem | undefined {
+const findItem = (quote: Quote, sel: { rowId: string; fareId: string } | null): QuoteItem | undefined => {
   if (!sel) return undefined;
   return quote.flightItems.find((i) => i.rowId === sel.rowId && i.fareId === sel.fareId);
-}
+};
 
-function ClosedFlightCard({ item }: { item: QuoteItem }) {
-  return (
-    <div className="flex flex-col gap-1.5 rounded-lg border border-green-200 bg-green-50/60 p-3">
-      {item.ida ? <LegLine leg={item.ida} icon={PlaneTakeoff} /> : null}
-      {item.volta ? <LegLine leg={item.volta} icon={PlaneLanding} /> : null}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
-        <span className="flex items-center gap-1 text-slate-600">
-          <Luggage className="h-3.5 w-3.5 text-slate-400" />
-          {item.baggage} <span className="text-slate-400">({item.fareLabel})</span>
-        </span>
-        <span className="font-semibold text-slate-900">{formatCurrencyBRL(item.price)}</span>
-      </div>
+const ClosedFlightCard = ({ item }: { item: QuoteItem }) => (
+  <div className="flex flex-col gap-1.5 rounded-lg border border-green-200 bg-green-50/60 p-3">
+    {item.ida ? <LegLine leg={item.ida} icon={PlaneTakeoff} /> : null}
+    {item.volta ? <LegLine leg={item.volta} icon={PlaneLanding} /> : null}
+    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+      <span className="flex items-center gap-1 text-slate-600">
+        <Luggage className="h-3.5 w-3.5 text-slate-400" />
+        {item.baggage} <span className="text-slate-400">({item.fareLabel})</span>
+      </span>
+      <span className="font-semibold text-slate-900">{formatCurrencyBRL(item.price)}</span>
     </div>
-  );
-}
+  </div>
+);
 
 interface QuoteDetailModalProps {
   quoteId: string;
@@ -86,7 +57,7 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
   const client = quote?.clientId ? getClient(quote.clientId) : undefined;
 
   const [mode, setMode] = useState<"view" | "edit" | "close">(initialMode);
-  const [extras, setExtras] = useState<QuoteExtras | null>(quote ? toExtras(quote, client) : null);
+  const [extras, setExtras] = useState<QuoteExtras | null>(quote ? quoteToExtras(quote, client) : null);
   const [items, setItems] = useState<QuoteItem[]>(quote?.flightItems || []);
   const [proposalShare, setProposalShare] = useState<ProposalShareRecord | null>(null);
 
@@ -117,13 +88,13 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
   };
 
   const handleEdit = () => {
-    setExtras(toExtras(quote, client));
+    setExtras(quoteToExtras(quote, client));
     setItems(quote.flightItems);
     setMode("edit");
   };
 
   const handleCancel = () => {
-    setExtras(toExtras(quote, client));
+    setExtras(quoteToExtras(quote, client));
     setItems(quote.flightItems);
     setMode("view");
   };

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { extractionResultSchema } from "@/lib/schema";
+import { extractRequestSchema } from "@/lib/validation/apiSchemas";
+import { checkRateLimit, getClientIp } from "@/lib/security/rateLimit";
+import { logger } from "@/lib/logger";
 import { FlightRow } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -49,8 +52,24 @@ quantidade de passageiros (ex: "1 Adulto", "2 Adultos, 1 Criança, 1 Bebê"), pr
 "passengers" ausente — não invente uma quantidade.`;
 
 export async function POST(req: NextRequest) {
+  const clientIp = getClientIp(req);
+
+  // Rate limit: máx 10 requisições por minuto por IP para proteger a cota da API
+  const rateLimit = checkRateLimit(`extract:${clientIp}`, { limit: 10, windowSeconds: 60 });
+  if (!rateLimit.allowed) {
+    logger.warn("Rate limit excedido na extração de IA", { clientIp });
+    return NextResponse.json(
+      { error: "Muitas requisições de extração. Aguarde alguns instantes e tente novamente." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.resetInSeconds) },
+      }
+    );
+  }
+
   try {
     if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      logger.error("Chave GOOGLE_GENERATIVE_AI_API_KEY não configurada no servidor.");
       return NextResponse.json(
         {
           error:
@@ -60,10 +79,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const imageDataUrl: string | undefined = body?.image;
-    if (!imageDataUrl || typeof imageDataUrl !== "string") {
-      return NextResponse.json({ error: "Imagem não enviada." }, { status: 400 });
+    const body = await req.json().catch(() => null);
+    const parsed = extractRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || "Payload de imagem inválido." },
+        { status: 400 }
+      );
     }
 
     const result = await generateObject({
@@ -74,7 +96,7 @@ export async function POST(req: NextRequest) {
           role: "user",
           content: [
             { type: "text", text: EXTRACTION_PROMPT },
-            { type: "image", image: imageDataUrl },
+            { type: "image", image: parsed.data.image },
           ],
         },
       ],
@@ -94,9 +116,14 @@ export async function POST(req: NextRequest) {
       })),
     }));
 
+    logger.info("Extração de voos concluída com sucesso", {
+      clientIp,
+      rowsCount: rows.length,
+    });
+
     return NextResponse.json({ rows, passengers: result.object.passengers ?? null });
   } catch (err) {
-    console.error("Erro na extração:", err);
+    logger.error("Erro na extração de voos via Gemini", err, { clientIp });
     const message = err instanceof Error ? err.message : "Erro desconhecido na extração.";
     return NextResponse.json({ error: message }, { status: 500 });
   }

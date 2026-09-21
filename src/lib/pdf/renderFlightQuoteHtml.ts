@@ -1,6 +1,10 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { FlightQuoteTemplateData } from "./buildFlightQuoteData";
+import { escapeHtml, nl2br } from "./htmlUtils";
+import { getAirlineLogoUrl } from "../airlineLogo";
+
+export { escapeHtml };
 
 type TemplateGrupo = FlightQuoteTemplateData["grupos"][number];
 type TemplateOpcao = TemplateGrupo["opcoes"][number];
@@ -11,29 +15,6 @@ type TemplateLeg = NonNullable<TemplateOpcao["ida"]>;
 // de design para os dois pipelines de geração de PDF (Python standalone e
 // Node/Puppeteer usado pelo app). Só a "montagem" do HTML muda.
 const PDF_TEMPLATE_DIR = path.join(process.cwd(), "pdf-template");
-
-export function escapeHtml(value: string | number | undefined | null): string {
-  if (value === undefined || value === null) return "";
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-/** Equivalente ao filtro Jinja2 `nl2br` do generate_pdf.py: parágrafos
- * separados por linha em branco, com escape de segurança. */
-function nl2br(value: string): string {
-  if (!value) return "";
-  return value
-    .replace(/\r\n/g, "\n")
-    .split(/\n\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
-    .join("");
-}
 
 let cachedCss: string | null = null;
 async function loadCss(): Promise<string> {
@@ -104,6 +85,10 @@ function renderLinhaData(data: FlightQuoteTemplateData): string {
 const AVIAO_SVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2.5 1.8V22l3.5-1 3.5 1v-1.2L12 19v-5.5l9 2.5z"/></svg>`;
 
 function renderLeg(leg: TemplateLeg, label?: string): string {
+  const logo = getAirlineLogoUrl(leg.cia_aerea, leg.numero_voo);
+  const logoHtml = logo
+    ? `<img src="${escapeHtml(logo)}" alt="" style="width:13px;height:13px;border-radius:999px;vertical-align:middle;margin-right:4px;object-fit:contain;background:#fff;border:1px solid #cbd5e1;padding:1px;display:inline-block;" />`
+    : "";
   return `
         <div class="voo-leg">
           ${label ? `<p class="voo-leg-label">${escapeHtml(label)}</p>` : ""}
@@ -119,7 +104,7 @@ function renderLeg(leg: TemplateLeg, label?: string): string {
             </div>
           </div>
           <div class="voo-meta">
-            <span>${escapeHtml(leg.cia_aerea)} ${escapeHtml(leg.numero_voo)} · ${escapeHtml(leg.data)}</span>
+            <span style="display:inline-flex;align-items:center;">${logoHtml}${escapeHtml(leg.cia_aerea)} ${escapeHtml(leg.numero_voo)} · ${escapeHtml(leg.data)}</span>
             <span>Duração: <strong>${escapeHtml(leg.duracao)}</strong></span>
             <span>Conexões: <strong>${escapeHtml(leg.conexoes)}</strong></span>
             ${leg.equipamento ? `<span>Equip.: <strong>${escapeHtml(leg.equipamento)}</strong></span>` : ""}
@@ -131,6 +116,10 @@ function renderOpcoes(opcoes: TemplateOpcao[]): string {
   return opcoes
     .map((o, idx) => {
       const principal = o.ida ?? o.volta!;
+      const logoPrincipal = getAirlineLogoUrl(principal.cia_aerea, principal.numero_voo);
+      const logoPrincipalImg = logoPrincipal
+        ? `<img src="${escapeHtml(logoPrincipal)}" alt="" style="width:16px;height:16px;border-radius:999px;vertical-align:middle;margin-right:6px;object-fit:contain;background:#fff;border:1px solid #cbd5e1;padding:1px;display:inline-block;" />`
+        : "";
       const titulo =
         o.ida && o.volta
           ? `Opção ${idx + 1} · Ida e volta · ${escapeHtml(principal.cia_aerea)}`
@@ -138,7 +127,7 @@ function renderOpcoes(opcoes: TemplateOpcao[]): string {
       return `
     <div class="voo-card">
       <div class="voo-card-header">
-        <span>${titulo}</span>
+        <span style="display:inline-flex;align-items:center;">${logoPrincipalImg}${titulo}</span>
         <span class="voo-card-preco">${escapeHtml(o.valor)}</span>
       </div>
       <div class="voo-card-body">

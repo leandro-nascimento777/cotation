@@ -12,19 +12,17 @@ interface ShareModalProps {
   onUpdated: (share: ProposalShareRecord) => void;
 }
 
-function publicOrigin() {
-  return typeof window !== "undefined" ? window.location.origin : "";
-}
+const publicOrigin = (): string => (typeof window !== "undefined" ? window.location.origin : "");
 
-function formatTimeLeft(expiresAt: Date, now: number): string {
+const formatTimeLeft = (expiresAt: Date, now: number): string => {
   const ms = new Date(expiresAt).getTime() - now;
   if (ms <= 0) return "Expirado";
   const hours = Math.floor(ms / (60 * 60 * 1000));
   const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
   return `${hours}h ${minutes}min restantes`;
-}
+};
 
-function CopyButton({ text }: { text: string }) {
+const CopyButton = ({ text }: { text: string }) => {
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -40,9 +38,9 @@ function CopyButton({ text }: { text: string }) {
       {copied ? "Copiado!" : "Copiar"}
     </button>
   );
-}
+};
 
-export function ShareModal({ share: initialShare, onClose, onUpdated }: ShareModalProps) {
+export const ShareModal = ({ share: initialShare, onClose, onUpdated }: ShareModalProps) => {
   const [share, setShare] = useState(initialShare);
   const [creating, setCreating] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);

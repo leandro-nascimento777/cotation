@@ -16,7 +16,7 @@ interface PreviewPanelProps {
   onManageProposal: (mode: "theme" | "share" | "pdf") => void;
 }
 
-export function PreviewPanel({
+export const PreviewPanel = ({
   items,
   agency,
   pdfLoading,
@@ -24,7 +24,7 @@ export function PreviewPanel({
   quoteId,
   proposalShare,
   onManageProposal,
-}: PreviewPanelProps) {
+}: PreviewPanelProps) => {
   const [tab, setTab] = useState<"whatsapp" | "pdf" | "link">("whatsapp");
   const [copied, setCopied] = useState(false);
   const selected = items.filter((i) => i.selected);
@@ -173,8 +173,7 @@ export function PreviewPanel({
   );
 }
 
-function formatWhatsAppPreview(text: string) {
-  // Converte *negrito* e _itálico_ em elementos simples pro preview visual.
+const formatWhatsAppPreview = (text: string) => {
   const parts = text.split(/(\*[^*]+\*|_[^_]+_)/g);
   return parts.map((part, i) => {
     if (part.startsWith("*") && part.endsWith("*")) {
@@ -185,4 +184,4 @@ function formatWhatsAppPreview(text: string) {
     }
     return <span key={i}>{part}</span>;
   });
-}
+};

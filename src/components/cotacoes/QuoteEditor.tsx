@@ -7,7 +7,7 @@ import { UploadCard } from "@/components/UploadCard";
 import { FlightList } from "@/components/FlightList";
 import { PreviewPanel } from "@/components/PreviewPanel";
 import { QuoteTypeSelector } from "./QuoteTypeSelector";
-import { QuoteExtrasForm, QuoteExtras } from "./QuoteExtrasForm";
+import { QuoteExtrasForm, QuoteExtras, quoteToExtras } from "./QuoteExtrasForm";
 import { ThemeModal } from "./proposal/ThemeModal";
 import { ShareModal } from "./proposal/ShareModal";
 import { useAppData } from "@/lib/store/AppDataContext";
@@ -21,65 +21,18 @@ import { FlightRow, flightRowsToQuoteItems, QuoteItem } from "@/lib/types";
 import { parseExtractedDateToISO } from "@/lib/format";
 import { Send } from "lucide-react";
 
-function extrasFromQuote(quote: Quote | undefined, defaults: QuoteExtras, client: { nomeCompleto: string; telefone: string; email: string } | undefined): QuoteExtras {
-  if (!quote) return defaults;
-  return {
-    clientId: quote.clientId,
-    clientName: client?.nomeCompleto || "",
-    clientPhone: client?.telefone || "",
-    clientEmail: client?.email || "",
-    responsavelId: quote.responsavelId,
-    sellerName: quote.sellerName,
-    sellerEmail: quote.sellerEmail,
-    sellerPhone: quote.sellerPhone,
-    destino: quote.destino,
-    periodoInicio: quote.periodoInicio,
-    periodoFim: quote.periodoFim,
-    paymentMethod: quote.paymentMethod,
-    validityHours: quote.validityHours,
-    priority: quote.priority,
-    pricingProfileId: quote.pricingProfileId,
-    adults: quote.adults,
-    children: quote.children,
-    infants: quote.infants,
-    mensagemDestaque: quote.mensagemDestaque,
-    observacoes: quote.observacoes,
-  };
-}
-
 export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   const router = useRouter();
   const { agency, createQuote, updateQuote, getClient, createClient, updateClient } = useAppData();
-
-  const defaults: QuoteExtras = {
-    clientId: null,
-    clientName: "",
-    clientPhone: "",
-    clientEmail: "",
-    responsavelId: null,
-    sellerName: agency.sellerName,
-    sellerEmail: agency.email,
-    sellerPhone: agency.phone,
-    destino: "",
-    periodoInicio: "",
-    periodoFim: "",
-    paymentMethod: "",
-    validityHours: 24,
-    priority: "NORMAL",
-    pricingProfileId: null,
-    adults: 1,
-    children: 0,
-    infants: 0,
-    mensagemDestaque: "Agradecemos a preferência! Seguem as opções de voo selecionadas para sua viagem.",
-    observacoes: "Valores sujeitos a disponibilidade e alteração sem aviso prévio até a confirmação da reserva.",
-  };
 
   const existingClient = existingQuote?.clientId ? getClient(existingQuote.clientId) : undefined;
 
   const [quoteId, setQuoteId] = useState<string | null>(existingQuote?.id || null);
   const [numero, setNumero] = useState<string>(existingQuote?.numero || "");
   const [items, setItems] = useState<QuoteItem[]>(existingQuote?.flightItems || []);
-  const [extras, setExtras] = useState<QuoteExtras>(extrasFromQuote(existingQuote, defaults, existingClient));
+  const [extras, setExtras] = useState<QuoteExtras>(() =>
+    quoteToExtras(existingQuote, existingClient, agency)
+  );
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [extractLoading, setExtractLoading] = useState(false);
   const [extractError, setExtractError] = useState<string | null>(null);
@@ -112,15 +65,34 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
       const voltaRow = [...rows].reverse().find((r) => r.volta);
       const passengers: { adults?: number; children?: number; infants?: number } | null = data.passengers ?? null;
 
-      setExtras((prev) => ({
-        ...prev,
-        destino: prev.destino || idaRow?.ida?.destination || voltaRow?.volta?.origin || prev.destino,
-        periodoInicio: prev.periodoInicio || (idaRow?.ida ? parseExtractedDateToISO(idaRow.ida.date) : prev.periodoInicio),
-        periodoFim: prev.periodoFim || (voltaRow?.volta ? parseExtractedDateToISO(voltaRow.volta.date) : prev.periodoFim),
-        adults: passengers?.adults ?? prev.adults,
-        children: passengers?.children ?? prev.children,
-        infants: passengers?.infants ?? prev.infants,
-      }));
+      const dateIdaExtracted = idaRow?.ida ? parseExtractedDateToISO(idaRow.ida.date) : "";
+      const dateVoltaExtracted = voltaRow?.volta ? parseExtractedDateToISO(voltaRow.volta.date) : "";
+      const hasVolta = rows.some((r) => Boolean(r.volta));
+
+      setExtras((prev) => {
+        const nextIda = prev.periodoInicio || dateIdaExtracted;
+        const nextVolta = prev.periodoFim || dateVoltaExtracted;
+
+        // Avisa o agente caso a data de ida ou volta não tenha sido identificada no print
+        if (!nextIda || (hasVolta && !nextVolta)) {
+          setTimeout(() => {
+            toast.warning(
+              "Atenção: A data de ida e/ou retorno não foi identificada no print. Por favor, preencha as datas no formulário para que o bilhete da proposta seja gerado corretamente.",
+              { duration: 7000 }
+            );
+          }, 400);
+        }
+
+        return {
+          ...prev,
+          destino: prev.destino || idaRow?.ida?.destination || voltaRow?.volta?.origin || prev.destino,
+          periodoInicio: nextIda,
+          periodoFim: nextVolta,
+          adults: passengers?.adults ?? prev.adults,
+          children: passengers?.children ?? prev.children,
+          infants: passengers?.infants ?? prev.infants,
+        };
+      });
     } catch (err) {
       setExtractError(err instanceof Error ? err.message : "Erro desconhecido.");
     } finally {

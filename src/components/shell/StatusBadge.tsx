@@ -8,10 +8,8 @@ const STATUS_STYLE: Record<QuoteStatusType, string> = {
   APROVADA: "bg-green-50 text-green-700",
 };
 
-export function StatusBadge({ status }: { status: QuoteStatusType }) {
-  return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[status]}`}>
-      {QUOTE_STATUS_LABEL[status]}
-    </span>
-  );
-}
+export const StatusBadge = ({ status }: { status: QuoteStatusType }) => (
+  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[status]}`}>
+    {QUOTE_STATUS_LABEL[status]}
+  </span>
+);

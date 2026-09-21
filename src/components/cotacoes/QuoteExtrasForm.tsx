@@ -1,17 +1,21 @@
 "use client";
 
 import { useAppData } from "@/lib/store/AppDataContext";
+import { FormField, FormSelect, FormTextarea } from "@/components/ui/FormField";
 import {
+  Client,
   PAYMENT_METHOD_LABEL,
   PaymentMethodType,
   QUOTE_PRIORITY_LABEL,
   QuotePriorityType,
+  Quote,
 } from "@/lib/store/types";
 import { TeamMemberPicker } from "./TeamMemberPicker";
 
 export interface QuoteExtras {
   clientId: string | null;
   clientName: string;
+  passengerNames?: string;
   clientPhone: string;
   clientEmail: string;
   responsavelId: string | null;
@@ -32,54 +36,45 @@ export interface QuoteExtras {
   observacoes: string;
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  textarea,
-  min,
-}: {
-  label: string;
-  value: string | number;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-  textarea?: boolean;
-  min?: number;
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-      {label}
-      {textarea ? (
-        <textarea
-          value={value}
-          placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-          rows={2}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
-        />
-      ) : (
-        <input
-          type={type}
-          min={min}
-          value={value}
-          placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
-        />
-      )}
-    </label>
-  );
-}
+/** Cria ou preenche QuoteExtras a partir de uma Quote existente ou com valores padrão da agência. */
+export const quoteToExtras = (
+  quote?: Quote | null,
+  client?: Client | { nomeCompleto?: string; telefone?: string; email?: string } | null,
+  fallbackAgency?: { sellerName?: string; email?: string; phone?: string }
+): QuoteExtras => ({
+  clientId: quote?.clientId ?? null,
+  clientName: client?.nomeCompleto ?? "",
+  passengerNames: "",
+  clientPhone: client?.telefone ?? "",
+  clientEmail: client?.email ?? "",
+  responsavelId: quote?.responsavelId ?? null,
+  sellerName: quote?.sellerName ?? fallbackAgency?.sellerName ?? "",
+  sellerEmail: quote?.sellerEmail ?? fallbackAgency?.email ?? "",
+  sellerPhone: quote?.sellerPhone ?? fallbackAgency?.phone ?? "",
+  destino: quote?.destino ?? "",
+  periodoInicio: quote?.periodoInicio ?? "",
+  periodoFim: quote?.periodoFim ?? "",
+  paymentMethod: quote?.paymentMethod ?? "",
+  validityHours: quote?.validityHours ?? 24,
+  priority: quote?.priority ?? "NORMAL",
+  pricingProfileId: quote?.pricingProfileId ?? null,
+  adults: quote?.adults ?? 1,
+  children: quote?.children ?? 0,
+  infants: quote?.infants ?? 0,
+  mensagemDestaque:
+    quote?.mensagemDestaque ??
+    "Agradecemos a preferência! Seguem as opções de voo selecionadas para sua viagem.",
+  observacoes:
+    quote?.observacoes ??
+    "Valores sujeitos a disponibilidade e alteração sem aviso prévio até a confirmação da reserva.",
+});
 
 interface QuoteExtrasFormProps {
   extras: QuoteExtras;
   onChange: (extras: QuoteExtras) => void;
 }
 
-export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
+export const QuoteExtrasForm = ({ extras, onChange }: QuoteExtrasFormProps) => {
   const { clients, pricingProfiles } = useAppData();
   const set = <K extends keyof QuoteExtras>(key: K, value: QuoteExtras[K]) =>
     onChange({ ...extras, [key]: value });
@@ -113,8 +108,8 @@ export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
             ))}
           </datalist>
         </label>
-        <Field label="Telefone do cliente" value={extras.clientPhone} onChange={(v) => set("clientPhone", v)} />
-        <Field label="E-mail do cliente" value={extras.clientEmail} onChange={(v) => set("clientEmail", v)} />
+        <FormField label="Telefone do cliente" value={extras.clientPhone} onChange={(v) => set("clientPhone", v)} />
+        <FormField label="E-mail do cliente" value={extras.clientEmail} onChange={(v) => set("clientEmail", v)} />
       </div>
       {extras.clientId ? (
         <p className="mb-3 text-xs font-medium text-teal-700">✓ Cliente já cadastrado — dados preenchidos automaticamente.</p>
@@ -141,95 +136,92 @@ export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2 @4xl:grid-cols-3">
-        <Field label="Vendedor(a)" value={extras.sellerName} onChange={(v) => set("sellerName", v)} />
-        <Field label="Telefone do responsável" value={extras.sellerPhone} onChange={(v) => set("sellerPhone", v)} />
-        <Field label="E-mail" value={extras.sellerEmail} onChange={(v) => set("sellerEmail", v)} />
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Forma de pagamento
-          <select
-            value={extras.paymentMethod}
-            onChange={(e) => set("paymentMethod", e.target.value as PaymentMethodType | "")}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
-          >
-            <option value="">Selecione…</option>
-            {Object.entries(PAYMENT_METHOD_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Tipo de cobrança
-          <select
-            value={extras.pricingProfileId ?? ""}
-            onChange={(e) => set("pricingProfileId", e.target.value || null)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
-          >
-            <option value="">Nenhum</option>
-            {pricingProfiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.nome}
-              </option>
-            ))}
-          </select>
-          {pricingProfiles.length === 0 ? (
-            <span className="text-[11px] font-normal text-slate-400">
-              Crie perfis em Configurações → Financeiro.
-            </span>
-          ) : null}
-        </label>
-        <Field
+        <FormField label="Vendedor(a)" value={extras.sellerName} onChange={(v) => set("sellerName", v)} />
+        <FormField label="Telefone do responsável" value={extras.sellerPhone} onChange={(v) => set("sellerPhone", v)} />
+        <FormField label="E-mail" value={extras.sellerEmail} onChange={(v) => set("sellerEmail", v)} />
+
+        <FormSelect
+          label="Forma de pagamento"
+          value={extras.paymentMethod}
+          onChange={(v) => set("paymentMethod", v as PaymentMethodType | "")}
+        >
+          <option value="">Selecione…</option>
+          {Object.entries(PAYMENT_METHOD_LABEL).map(([val, label]) => (
+            <option key={val} value={val}>
+              {label}
+            </option>
+          ))}
+        </FormSelect>
+
+        <FormSelect
+          label="Tipo de cobrança"
+          value={extras.pricingProfileId ?? ""}
+          onChange={(v) => set("pricingProfileId", v || null)}
+          hint={pricingProfiles.length === 0 ? "Crie perfis em Configurações → Financeiro." : undefined}
+        >
+          <option value="">Nenhum</option>
+          {pricingProfiles.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.nome}
+            </option>
+          ))}
+        </FormSelect>
+
+        <FormField
           label="Destino"
           value={extras.destino}
           onChange={(v) => set("destino", v)}
           placeholder="Preenchido automaticamente a partir do print"
         />
-        <Field
+        <FormField
           label="Validade da cotação (horas)"
           type="number"
           value={extras.validityHours}
           onChange={(v) => set("validityHours", Math.max(1, Number(v) || 1))}
         />
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-          Prioridade
-          <select
-            value={extras.priority}
-            onChange={(e) => set("priority", e.target.value as QuotePriorityType)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
-          >
-            {Object.entries(QUOTE_PRIORITY_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Field
+        <FormSelect
+          label="Prioridade"
+          value={extras.priority}
+          onChange={(v) => set("priority", v as QuotePriorityType)}
+        >
+          {Object.entries(QUOTE_PRIORITY_LABEL).map(([val, label]) => (
+            <option key={val} value={val}>
+              {label}
+            </option>
+          ))}
+        </FormSelect>
+        <FormField
           label="Período — ida"
           type="date"
           value={extras.periodoInicio}
+          error={!extras.periodoInicio ? "Preenchimento necessário para o bilhete" : undefined}
           onChange={(v) => set("periodoInicio", v)}
         />
-        <Field label="Período — volta" type="date" value={extras.periodoFim} onChange={(v) => set("periodoFim", v)} />
+        <FormField
+          label="Período — volta"
+          type="date"
+          value={extras.periodoFim}
+          hint={!extras.periodoFim ? "Preencha para voos de ida e volta" : undefined}
+          onChange={(v) => set("periodoFim", v)}
+        />
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-3">
-        <Field
+        <FormField
           label="Adultos"
           type="number"
           min={0}
           value={extras.adults}
           onChange={(v) => set("adults", Math.max(0, Number(v) || 0))}
         />
-        <Field
+        <FormField
           label="Crianças"
           type="number"
           min={0}
           value={extras.children}
           onChange={(v) => set("children", Math.max(0, Number(v) || 0))}
         />
-        <Field
+        <FormField
           label="Bebês"
           type="number"
           min={0}
@@ -238,14 +230,31 @@ export function QuoteExtrasForm({ extras, onChange }: QuoteExtrasFormProps) {
         />
       </div>
 
+      {extras.adults + extras.children > 1 ? (
+        <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/50 p-3">
+          <FormField
+            label="Nomes dos passageiros (separados por vírgula)"
+            value={extras.passengerNames || ""}
+            onChange={(v) => set("passengerNames", v)}
+            placeholder="Ex: DANIEL HADID, ANTONIO BRID, PRISCILA ALCANTARA"
+            hint="Serão exibidos empilhados no Bilhete de Embarque (Anexo 3)"
+          />
+        </div>
+      ) : null}
+
       <div className="mt-3 grid grid-cols-1 gap-3">
-        <Field
+        <FormTextarea
           label="Mensagem de destaque"
+          rows={2}
           value={extras.mensagemDestaque}
           onChange={(v) => set("mensagemDestaque", v)}
-          textarea
         />
-        <Field label="Observações importantes" value={extras.observacoes} onChange={(v) => set("observacoes", v)} textarea />
+        <FormTextarea
+          label="Observações importantes"
+          rows={2}
+          value={extras.observacoes}
+          onChange={(v) => set("observacoes", v)}
+        />
       </div>
     </div>
   );

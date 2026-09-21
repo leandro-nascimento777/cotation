@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { useAppData } from "@/lib/store/AppDataContext";
+import { useQuoteBoard } from "@/hooks/useQuoteBoard";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { EmptyState } from "@/components/shell/EmptyState";
+import { LoadingState } from "@/components/shell/LoadingState";
 import { StatTile } from "@/components/dashboard/StatTile";
 import { NewQuoteButton } from "@/components/shell/NewQuoteButton";
 import { QuoteDetailModal } from "@/components/cotacoes/QuoteDetailModal";
-import { getProposalDecisions } from "@/lib/proposal/actions";
-import { formatCurrencyBRL } from "@/lib/format";
+import { formatCurrencyBRL, formatWhatsAppLink } from "@/lib/format";
 import {
   QUOTE_PRIORITY_LABEL,
   QUOTE_STATUS_LABEL,
   QUOTE_STATUS_ORDER,
-  Quote,
   QuotePriorityType,
   QuoteStatusType,
 } from "@/lib/store/types";
@@ -33,92 +32,32 @@ const PRIORITY_STYLE: Record<QuotePriorityType, string> = {
   ALTA: "bg-red-50 text-red-600",
 };
 
-/** Link "wa.me" a partir de um telefone livremente formatado (assume DDI 55
- * quando o número não já inclui um código de país). */
-function whatsappLink(phone: string): string | null {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.length < 10) return null;
-  const withCountryCode = digits.length <= 11 ? `55${digits}` : digits;
-  return `https://wa.me/${withCountryCode}`;
-}
-
 export default function CotacoesPage() {
   const { quotes, clients, updateQuote, hydrated } = useAppData();
-  const [query, setQuery] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState<QuotePriorityType | "">("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [dragOverStatus, setDragOverStatus] = useState<QuoteStatusType | null>(null);
-  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
-  const [modalInitialMode, setModalInitialMode] = useState<"view" | "close">("view");
 
-  const clientNameById = useMemo(() => new Map(clients.map((c) => [c.id, c.nomeCompleto])), [clients]);
-  const clientPhoneById = useMemo(() => new Map(clients.map((c) => [c.id, c.telefone])), [clients]);
-
-  // Ao carregar o board, sincroniza aprovações que o cliente deu na
-  // proposta pública: move a cotação pra "Aprovada" e pré-preenche a
-  // escolha de ida/volta (se o agente ainda não tiver fechado a venda),
-  // pra já aparecer certo quando ele abrir "Fechar venda".
-  useEffect(() => {
-    if (!hydrated || quotes.length === 0) return;
-    getProposalDecisions(quotes.map((q) => q.id)).then((decisions) => {
-      for (const decision of decisions) {
-        if (decision.clientDecision !== "APROVADO") continue;
-        const quote = quotes.find((q) => q.id === decision.quoteLocalId);
-        if (!quote || quote.status === "APROVADA") continue;
-
-        const patch: Partial<Quote> = { status: "APROVADA" };
-        const canPrefill = !quote.saleClosed && !quote.closedIda && !quote.closedVolta;
-        if (canPrefill && decision.selectedIdaRowId && decision.selectedIdaFareId) {
-          patch.closedIda = { rowId: decision.selectedIdaRowId, fareId: decision.selectedIdaFareId };
-        }
-        if (canPrefill && decision.selectedVoltaRowId && decision.selectedVoltaFareId) {
-          patch.closedVolta = { rowId: decision.selectedVoltaRowId, fareId: decision.selectedVoltaFareId };
-        }
-        updateQuote(quote.id, patch);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return quotes
-      .filter((quote) => !priorityFilter || quote.priority === priorityFilter)
-      .filter((quote) => {
-        if (!q) return true;
-        return [quote.numero, quote.destino, clientNameById.get(quote.clientId || "")]
-          .filter(Boolean)
-          .some((f) => f!.toLowerCase().includes(q));
-      });
-  }, [quotes, query, priorityFilter, clientNameById]);
-
-  const byStatus = useMemo(() => {
-    const map = new Map<QuoteStatusType, Quote[]>();
-    for (const status of QUOTE_STATUS_ORDER) map.set(status, []);
-    for (const quote of [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
-      map.get(quote.status)?.push(quote);
-    }
-    return map;
-  }, [filtered]);
-
-  const stats = useMemo(
-    () => ({
-      total: quotes.length,
-      aguardandoResposta: quotes.filter((q) => q.status === "AGUARDANDO_CLIENTE").length,
-      valorTotal: quotes.reduce((sum, q) => sum + (q.valorTotal || 0), 0),
-    }),
-    [quotes]
-  );
-
-  const handleDrop = (status: QuoteStatusType) => {
-    setDragOverStatus(null);
-    if (dragId) updateQuote(dragId, { status });
-    setDragId(null);
-  };
+  const {
+    query,
+    setQuery,
+    priorityFilter,
+    setPriorityFilter,
+    filtersOpen,
+    setFiltersOpen,
+    setDragId,
+    dragOverStatus,
+    setDragOverStatus,
+    selectedQuoteId,
+    setSelectedQuoteId,
+    modalInitialMode,
+    setModalInitialMode,
+    clientNameById,
+    clientPhoneById,
+    byStatus,
+    stats,
+    handleDrop,
+  } = useQuoteBoard({ quotes, clients, updateQuote, hydrated });
 
   if (!hydrated) {
-    return <div className="flex h-full items-center justify-center py-24 text-sm text-slate-400">Carregando…</div>;
+    return <LoadingState />;
   }
 
   return (
@@ -228,7 +167,7 @@ export default function CotacoesPage() {
                         ) : (
                           columnQuotes.map((quote) => {
                             const phone = quote.clientId ? clientPhoneById.get(quote.clientId) : undefined;
-                            const waLink = phone ? whatsappLink(phone) : null;
+                            const waLink = phone ? formatWhatsAppLink(phone) : null;
                             return (
                               <div
                                 key={quote.id}

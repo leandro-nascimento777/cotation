@@ -3,33 +3,20 @@
 import { useState } from "react";
 import { LegLine } from "@/components/FlightList";
 import { formatCurrencyBRL } from "@/lib/format";
+import { groupByRow } from "@/lib/groupQuoteItems";
 import { ClosedFlightSelection, Quote } from "@/lib/store/types";
 import { legKind, QuoteItem } from "@/lib/types";
 import { CheckCircle2, Luggage, PlaneLanding, PlaneTakeoff } from "lucide-react";
 
-interface RowGroup {
-  rowId: string;
-  fares: QuoteItem[];
-}
-
-function groupByRow(items: QuoteItem[]): RowGroup[] {
-  const rowIds = Array.from(new Set(items.map((i) => i.rowId)));
-  return rowIds.map((rowId) => ({ rowId, fares: items.filter((i) => i.rowId === rowId) }));
-}
-
-function OptionCard({
-  fare,
-  name,
-  checked,
-  onSelect,
-  locked,
-}: {
+interface OptionCardProps {
   fare: QuoteItem;
   name: string;
   checked: boolean;
   onSelect: () => void;
   locked: boolean;
-}) {
+}
+
+const OptionCard = ({ fare, name, checked, onSelect, locked }: OptionCardProps) => {
   if (locked) {
     return (
       <div

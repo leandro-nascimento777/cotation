@@ -1,27 +1,23 @@
-export function formatCurrencyBRL(value: number): string {
-  return value.toLocaleString("pt-BR", {
+export const formatCurrencyBRL = (value: number): string =>
+  value.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
     minimumFractionDigits: 2,
   });
-}
 
-export function quoteNumber(date = new Date()): string {
+export const quoteNumber = (date = new Date()): string => {
   const y = date.getFullYear();
   const stamp = date.getTime().toString().slice(-6);
   return `ORC-${y}-${stamp}`;
-}
+};
 
-export function formatDatePtBR(date = new Date()): string {
+export const formatDatePtBR = (date = new Date()): string => {
   const formatted = date.toLocaleDateString("pt-BR", {
     weekday: "long",
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
-  // "segunda-feira, 30 de agosto..." -> "Segunda-Feira, 30 de agosto..."
-  // (capitaliza só o dia da semana, como no modelo de referência; funciona
-  // tanto para dias com hífen quanto "sábado"/"domingo")
   const commaIndex = formatted.indexOf(",");
   if (commaIndex === -1) return formatted;
   const weekday = formatted
@@ -30,79 +26,67 @@ export function formatDatePtBR(date = new Date()): string {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join("-");
   return weekday + formatted.slice(commaIndex);
-}
+};
 
-/** Formata dígitos de CNPJ como "00.000.000/0000-00" enquanto o usuário
- * digita (aceita colar com ou sem pontuação). */
-export function formatCnpjMask(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 14);
-  const parts = [
-    [0, 2],
-    [2, 5],
-    [5, 8],
-    [8, 12],
-    [12, 14],
-  ] as const;
-  let out = "";
-  for (const [start, end] of parts) {
-    if (digits.length > start) out += digits.slice(start, end);
-    if (end === 2 && digits.length > 2) out += ".";
-    if (end === 5 && digits.length > 5) out += ".";
-    if (end === 8 && digits.length > 8) out += "/";
-    if (end === 12 && digits.length > 12) out += "-";
-  }
-  return out;
-}
+/** Formata dígitos de CNPJ como "00.000.000/0000-00" enquanto o usuário digita. */
+export const formatCnpjMask = (value: string): string => {
+  const d = value.replace(/\D/g, "").slice(0, 14);
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12, 14)}`;
+};
 
-/** Máscara de valor monetário (BRL) enquanto o usuário digita — trata os
- * dígitos como centavos (ex: "150000" -> "1.500,00"), igual um campo de
- * dinheiro comum em apps brasileiros. Aceita colar com ou sem pontuação. */
-export function formatMoneyMaskFromDigits(value: string): string {
+/** Gera link wa.me para WhatsApp a partir de um telefone brasileiro ou internacional com mensagem opcional. */
+export const formatWhatsAppLink = (phone: string, text?: string): string | null => {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 10) return null;
+  const withCountryCode = digits.length <= 11 ? `55${digits}` : digits;
+  const base = `https://wa.me/${withCountryCode}`;
+  return text ? `${base}?text=${encodeURIComponent(text)}` : base;
+};
+
+/** Máscara de valor monetário (BRL) em tempo real a partir dos dígitos. */
+export const formatMoneyMaskFromDigits = (value: string): string => {
   const digits = value.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 13);
   const cents = digits.padStart(3, "0");
   const intPart = cents.slice(0, -2);
   const decPart = cents.slice(-2);
   const withThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   return `${withThousands},${decPart}`;
-}
+};
 
-/** Converte o texto já mascarado ("1.500,00") de volta pro número (1500). */
-export function moneyMaskToNumber(masked: string): number {
+/** Converte texto mascarado ("1.500,00") para número (1500). */
+export const moneyMaskToNumber = (masked: string): number => {
   const normalized = masked.replace(/\./g, "").replace(",", ".");
   return Number(normalized) || 0;
-}
+};
 
-/** Formata um número já salvo (ex: vindo do storage) pro texto mascarado
- * usado como valor inicial de um campo de dinheiro. */
-export function numberToMoneyMask(value: number): string {
-  return formatMoneyMaskFromDigits(Math.round(value * 100).toString());
-}
+/** Formata número para texto mascarado de dinheiro. */
+export const numberToMoneyMask = (value: number): string =>
+  formatMoneyMaskFromDigits(Math.round(value * 100).toString());
 
-/** Mantém só dígitos e uma vírgula (separador decimal) num campo de
- * percentual — texto livre, sem máscara de milhar (percentuais não
- * costumam passar de 3 dígitos inteiros). */
-export function sanitizePercentInput(value: string): string {
+/** Sanitiza input percentual mantendo dígitos e apenas uma vírgula. */
+export const sanitizePercentInput = (value: string): string => {
   let cleaned = value.replace(/[^\d,]/g, "");
   const firstComma = cleaned.indexOf(",");
   if (firstComma !== -1) {
     cleaned = cleaned.slice(0, firstComma + 1) + cleaned.slice(firstComma + 1).replace(/,/g, "");
   }
   return cleaned;
-}
+};
 
-/** Converte o texto de percentual ("12,5") pro número (12.5). */
-export function percentInputToNumber(text: string): number {
-  return Number(text.replace(",", ".")) || 0;
-}
+/** Converte texto de percentual ("12,5") para número (12.5). */
+export const percentInputToNumber = (text: string): number =>
+  Number(text.replace(",", ".")) || 0;
 
-/** Formata um número já salvo pro texto usado como valor inicial de um
- * campo de percentual (ex: 12.5 -> "12,5"). */
-export function numberToPercentInput(value: number): string {
-  return value.toString().replace(".", ",");
-}
+/** Formata número para valor inicial de campo percentual. */
+export const numberToPercentInput = (value: number): string =>
+  value.toString().replace(".", ",");
 
-/** Data/hora de validade da cotação: agora + N horas, formato "DD/MM/AAAA HH:mm". */
-export function validityDateTimePtBR(hours: number, from = new Date()): string {
+/** Data/hora de validade da cotação: agora + N horas. */
+export const validityDateTimePtBR = (hours: number, from = new Date()): string => {
   const date = new Date(from.getTime() + hours * 60 * 60 * 1000);
   return date.toLocaleString("pt-BR", {
     day: "2-digit",
@@ -111,7 +95,7 @@ export function validityDateTimePtBR(hours: number, from = new Date()): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
+};
 
 const MONTH_ABBR_PT: Record<string, string> = {
   jan: "01",
@@ -128,11 +112,8 @@ const MONTH_ABBR_PT: Record<string, string> = {
   dez: "12",
 };
 
-/** Converte uma data como veio do print extraído (ex: "18 Set" ou
- * "25/09/26") pro formato "AAAA-MM-DD" esperado por <input type="date">.
- * Retorna "" quando não reconhece o formato (o campo fica em branco pra
- * preenchimento manual em vez de quebrar). */
-export function parseExtractedDateToISO(raw: string, now = new Date()): string {
+/** Converte data extraída em texto pro formato "AAAA-MM-DD" aceito por <input type="date">. */
+export const parseExtractedDateToISO = (raw: string, now = new Date()): string => {
   const s = raw.trim().toLowerCase();
   if (!s) return "";
 
@@ -151,4 +132,5 @@ export function parseExtractedDateToISO(raw: string, now = new Date()): string {
   }
 
   return "";
-}
+};
+

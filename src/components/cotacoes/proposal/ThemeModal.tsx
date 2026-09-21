@@ -8,6 +8,7 @@ import { ProposalPdfThemeInput } from "@/lib/pdf/buildProposalPdfData";
 import { DEFAULT_THEME_ID, PROPOSAL_THEMES } from "@/lib/proposal/themes";
 import { QuoteExtras } from "@/components/cotacoes/QuoteExtrasForm";
 import { AgencySettings } from "@/lib/store/types";
+import { useAppData } from "@/lib/store/AppDataContext";
 import { QuoteItem } from "@/lib/types";
 import { Check, CloudUpload, Download, Loader2, X } from "lucide-react";
 
@@ -36,7 +37,7 @@ interface ThemeModalProps {
   onGeneratePdf?: (theme: ProposalPdfThemeInput) => Promise<void>;
 }
 
-export function ThemeModal({
+export const ThemeModal = ({
   mode,
   quoteId,
   numero,
@@ -47,7 +48,8 @@ export function ThemeModal({
   onClose,
   onGenerated,
   onGeneratePdf,
-}: ThemeModalProps) {
+}: ThemeModalProps) => {
+  const { getClient } = useAppData();
   const [themeId, setThemeId] = useState(existingShare?.themeId ?? DEFAULT_THEME_ID);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(existingShare?.coverImageUrl ?? null);
   const [coverTitle, setCoverTitle] = useState(existingShare?.coverTitle ?? "PROPOSTA DE VIAGEM");
@@ -124,7 +126,14 @@ export function ThemeModal({
           pdfCorSecundaria: agency.pdfCorSecundaria,
         },
         client: extras.clientName.trim()
-          ? { nomeCompleto: extras.clientName, telefone: extras.clientPhone, email: extras.clientEmail }
+          ? {
+              clientId: extras.clientId || undefined,
+              nomeCompleto: extras.clientName,
+              passageirosNomes: extras.passengerNames,
+              telefone: extras.clientPhone,
+              email: extras.clientEmail,
+              savedPassengers: extras.clientId ? getClient(extras.clientId)?.passageiros || [] : [],
+            }
           : null,
         themeId,
         coverImageUrl,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { EmptyState } from "@/components/shell/EmptyState";
+import { LoadingState } from "@/components/shell/LoadingState";
 import { Plus, Search, Users } from "lucide-react";
 
 export default function ClientesPage() {
@@ -22,7 +23,7 @@ export default function ClientesPage() {
   const quoteCount = (clientId: string) => quotes.filter((q) => q.clientId === clientId).length;
 
   if (!hydrated) {
-    return <div className="flex h-full items-center justify-center py-24 text-sm text-slate-400">Carregando…</div>;
+    return <LoadingState />;
   }
 
   return (

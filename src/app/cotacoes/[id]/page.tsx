@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { LoadingState } from "@/components/shell/LoadingState";
 import { StatusBadge } from "@/components/shell/StatusBadge";
 import { QuoteEditor } from "@/components/cotacoes/QuoteEditor";
 import { ArrowLeft } from "lucide-react";
@@ -13,7 +14,7 @@ export default function CotacaoDetailPage() {
   const { getQuote, hydrated } = useAppData();
 
   if (!hydrated) {
-    return <div className="flex h-full items-center justify-center py-24 text-sm text-slate-400">Carregando…</div>;
+    return <LoadingState />;
   }
 
   const quote = getQuote(params.id);

@@ -18,7 +18,7 @@ const MESSAGES = {
   },
 } as const;
 
-export function ProposalUnavailable({ reason }: { reason: keyof typeof MESSAGES }) {
+export const ProposalUnavailable = ({ reason }: { reason: keyof typeof MESSAGES }) => {
   const { icon: Icon, title, description } = MESSAGES[reason];
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-slate-50 px-6 text-center">
@@ -29,4 +29,4 @@ export function ProposalUnavailable({ reason }: { reason: keyof typeof MESSAGES 
       <p className="max-w-xs text-sm text-slate-500">{description}</p>
     </div>
   );
-}
+};

@@ -17,7 +17,10 @@ interface QuoteClientActions {
  * cotação (ver QuoteExtrasForm): se o nome digitado já bate com um cliente
  * salvo, sincroniza telefone/e-mail nele; senão cria um novo contato na
  * hora — é assim que "salva automaticamente ao finalizar a cotação". */
-export function resolveQuoteClientId(fields: QuoteClientFields, actions: QuoteClientActions): string | null {
+export const resolveQuoteClientId = (
+  fields: QuoteClientFields,
+  actions: QuoteClientActions
+): string | null => {
   const name = fields.clientName.trim();
   if (!name) return null;
 
@@ -40,4 +43,4 @@ export function resolveQuoteClientId(fields: QuoteClientFields, actions: QuoteCl
     observacoes: "",
   });
   return created.id;
-}
+};

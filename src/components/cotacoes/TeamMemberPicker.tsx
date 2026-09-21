@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAppData } from "@/lib/store/AppDataContext";
+import { FormField } from "@/components/ui/FormField";
 import { TeamMemberDraft } from "@/lib/store/types";
 import { Plus, X } from "lucide-react";
 
@@ -12,7 +13,7 @@ interface TeamMemberPickerProps {
   onSelect: (member: { id: string; nome: string; email: string; telefone: string } | null) => void;
 }
 
-export function TeamMemberPicker({ memberId, onSelect }: TeamMemberPickerProps) {
+export const TeamMemberPicker = ({ memberId, onSelect }: TeamMemberPickerProps) => {
   const { teamMembers, createTeamMember } = useAppData();
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState<TeamMemberDraft>(EMPTY_DRAFT);
@@ -35,17 +36,17 @@ export function TeamMemberPicker({ memberId, onSelect }: TeamMemberPickerProps) 
           </button>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <input
+          <FormField
+            label="Nome"
             value={draft.nome}
-            onChange={(e) => setDraft({ ...draft, nome: e.target.value })}
+            onChange={(v) => setDraft({ ...draft, nome: v })}
             placeholder="Nome"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
           />
-          <input
+          <FormField
+            label="Cargo"
             value={draft.cargo}
-            onChange={(e) => setDraft({ ...draft, cargo: e.target.value })}
+            onChange={(v) => setDraft({ ...draft, cargo: v })}
             placeholder="Cargo"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
           />
         </div>
         <button
@@ -86,4 +87,4 @@ export function TeamMemberPicker({ memberId, onSelect }: TeamMemberPickerProps) 
       </button>
     </div>
   );
-}
+};

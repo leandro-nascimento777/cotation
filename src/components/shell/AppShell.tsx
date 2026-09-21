@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar, BottomNav } from "./Sidebar";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export const AppShell = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
 
   // Página pública da proposta (aba Link) não tem navegação interna — o

@@ -3,18 +3,11 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAppData } from "@/lib/store/AppDataContext";
-import {
-  formatCnpjMask,
-  formatCurrencyBRL,
-  formatMoneyMaskFromDigits,
-  moneyMaskToNumber,
-  numberToMoneyMask,
-  numberToPercentInput,
-  percentInputToNumber,
-  sanitizePercentInput,
-} from "@/lib/format";
+import { formatCnpjMask, formatCurrencyBRL } from "@/lib/format";
 import { calculatePricing } from "@/lib/pricing";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { LoadingState } from "@/components/shell/LoadingState";
+import { FormField as Field, MoneyField, PercentField } from "@/components/ui/FormField";
 import {
   defaultPricingRules,
   DU_RAV_TIPO_LABEL,
@@ -40,135 +33,54 @@ import {
   X,
 } from "lucide-react";
 
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}: {
-  label: string;
-  value: string | number;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-      {label}
-      <input
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
-      />
-    </label>
-  );
-}
-
-/** Campo de dinheiro (R$) com máscara em tempo real — dígitos viram
- * centavos (ex: "150000" -> "1.500,00"), igual um input de valor comum em
- * apps brasileiros. `value`/`onChange` trabalham com o número puro. */
-function MoneyField({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
-  return (
-    <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-      {label}
-      <div className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 focus-within:border-teal-500">
-        <span className="text-sm text-slate-400">R$</span>
-        <input
-          inputMode="numeric"
-          value={numberToMoneyMask(value)}
-          onChange={(e) => onChange(moneyMaskToNumber(formatMoneyMaskFromDigits(e.target.value)))}
-          className="w-full min-w-0 text-sm text-slate-800 outline-none"
-        />
-      </div>
-    </label>
-  );
-}
-
-/** Campo de percentual — texto livre restrito a dígitos + vírgula
- * (separador decimal brasileiro), sem máscara de milhar. Mantém um buffer
- * local pra não perder a vírgula digitada enquanto o número ainda não tem
- * casa decimal (ex: usuário digitando "12," antes do "5"). */
-function PercentField({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
-  const [text, setText] = useState(() => numberToPercentInput(value));
-  return (
-    <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-      {label}
-      <div className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 focus-within:border-teal-500">
-        <input
-          inputMode="decimal"
-          value={text}
-          onChange={(e) => {
-            const cleaned = sanitizePercentInput(e.target.value);
-            setText(cleaned);
-            onChange(percentInputToNumber(cleaned));
-          }}
-          className="w-full min-w-0 text-sm text-slate-800 outline-none"
-        />
-        <span className="text-sm text-slate-400">%</span>
-      </div>
-    </label>
-  );
-}
-
-function ColorField({
-  label,
-  value,
-  onChange,
-}: {
+interface ColorFieldProps {
   label: string;
   value: string;
   onChange: (v: string) => void;
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-      {label}
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={value || "#ffffff"}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-9 w-9 shrink-0 cursor-pointer rounded border border-slate-300 bg-white p-0.5"
-        />
-        <input
-          value={value}
-          placeholder="padrão do sistema"
-          onChange={(e) => onChange(e.target.value)}
-          className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
-        />
-      </div>
-    </label>
-  );
 }
 
-function ToggleGroup<T extends string>({
-  value,
-  options,
-  onChange,
-}: {
+const ColorField = ({ label, value, onChange }: ColorFieldProps) => (
+  <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+    <span>{label}</span>
+    <div className="flex items-center gap-2">
+      <input
+        type="color"
+        value={value || "#ffffff"}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-9 w-9 shrink-0 cursor-pointer rounded border border-slate-300 bg-white p-0.5"
+      />
+      <input
+        value={value}
+        placeholder="padrão do sistema"
+        onChange={(e) => onChange(e.target.value)}
+        className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
+      />
+    </div>
+  </label>
+);
+
+interface ToggleGroupProps<T extends string> {
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
-}) {
-  return (
-    <div className="inline-flex rounded-lg border border-slate-300 bg-slate-50 p-0.5">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-            value === opt.value ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
 }
+
+const ToggleGroup = <T extends string>({ value, options, onChange }: ToggleGroupProps<T>) => (
+  <div className="inline-flex rounded-lg border border-slate-300 bg-slate-50 p-0.5">
+    {options.map((opt) => (
+      <button
+        key={opt.value}
+        type="button"
+        onClick={() => onChange(opt.value)}
+        className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
+          value === opt.value ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+        }`}
+      >
+        {opt.label}
+      </button>
+    ))}
+  </div>
+);
 
 function FinanceiroSection({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
@@ -589,11 +501,7 @@ export default function ConfiguracoesPage() {
   };
 
   if (!hydrated) {
-    return (
-      <div className="flex h-full items-center justify-center py-24 text-sm text-slate-400">
-        Carregando…
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (

@@ -154,6 +154,17 @@ export interface TeamMember {
 
 export type TeamMemberDraft = Omit<TeamMember, "id" | "createdAt">;
 
+export interface ClientPassenger {
+  id: string;
+  nome: string;
+  sobrenome: string;
+  paisResidencia: string;
+  tipoDocumento: string; // "CPF" | "RG" | "CPF ou RG" | "Passaporte"
+  numeroDocumento: string;
+  dataNascimento?: string; // DD/MM/AAAA
+  tipo: "Adulto" | "Criança" | "Bebê";
+}
+
 export interface Client {
   id: string;
   createdAt: string;
@@ -164,6 +175,7 @@ export interface Client {
   endereco: string;
   cidade: string;
   observacoes: string;
+  passageiros?: ClientPassenger[];
 }
 
 export type ClientDraft = Omit<Client, "id" | "createdAt">;

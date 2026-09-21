@@ -3,6 +3,12 @@ import { formatCurrencyBRL } from "../format";
 import { AgencySettings, PAYMENT_METHOD_LABEL, PaymentMethodType } from "../store/types";
 import { QuoteExtras } from "@/components/cotacoes/QuoteExtrasForm";
 import { getProposalTheme } from "../proposal/themes";
+import {
+  formatPassengersList,
+  formatTicketDate,
+  getTicketClass,
+  parseAirportInfo,
+} from "../ticketUtils";
 
 interface ProposalPdfLeg {
   airline: string;
@@ -38,6 +44,15 @@ export interface ProposalPdfData {
   periodoInicio: string;
   periodoFim: string;
   passageiros: string;
+  passengersList: string[];
+  ticketOriginIata: string;
+  ticketOriginLocation: string;
+  ticketDestIata: string;
+  ticketDestLocation: string;
+  ticketIdaDate: string;
+  ticketVoltaDate: string;
+  ticketClass: string;
+  ticketDestinoCode: string;
   emissao: string;
   options: ProposalPdfOption[];
   nextSteps: string[];
@@ -90,6 +105,15 @@ export function buildProposalPdfData(
     .join(", ");
 
   const themePreset = getProposalTheme(theme.themeId);
+  const activeItem = selected[0];
+  const legIda = activeItem?.ida;
+  const legVolta = activeItem?.volta;
+
+  const originInfo = parseAirportInfo(legIda?.origin || "GRU", "GRU");
+  const destInfo = parseAirportInfo(legIda?.destination || extras.destino || legVolta?.origin || "AMS", "AMS");
+
+  const totalCount = extras.adults + extras.children + extras.infants;
+  const passengersList = formatPassengersList(extras.clientName, extras.passengerNames, totalCount);
 
   return {
     numero,
@@ -104,6 +128,15 @@ export function buildProposalPdfData(
     periodoInicio: extras.periodoInicio,
     periodoFim: extras.periodoFim,
     passageiros,
+    passengersList,
+    ticketOriginIata: originInfo.iata,
+    ticketOriginLocation: originInfo.location,
+    ticketDestIata: destInfo.iata,
+    ticketDestLocation: destInfo.location,
+    ticketIdaDate: formatTicketDate(extras.periodoInicio || legIda?.date),
+    ticketVoltaDate: formatTicketDate(extras.periodoFim || legVolta?.date),
+    ticketClass: getTicketClass(activeItem),
+    ticketDestinoCode: legIda?.flightNumber || extras.destino || destInfo.iata || "A1 234",
     emissao: new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }),
     options: selected.map((item) => ({
       label: OPTION_LABEL[legKind(item)],

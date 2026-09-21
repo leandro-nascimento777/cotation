@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAppData } from "@/lib/store/AppDataContext";
-import { ClientForm } from "@/components/clientes/ClientForm";
+import { ClientForm, ClientFormErrors } from "@/components/clientes/ClientForm";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { clientSchema } from "@/lib/validation/schemas";
 import { ClientDraft } from "@/lib/store/types";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -24,14 +25,26 @@ export default function NovoClientePage() {
   const { createClient } = useAppData();
   const router = useRouter();
   const [draft, setDraft] = useState<ClientDraft>(EMPTY_DRAFT);
+  const [errors, setErrors] = useState<ClientFormErrors>({});
 
   const handleSave = () => {
-    if (!draft.nomeCompleto.trim()) {
-      toast.error("Informe o nome do cliente.");
+    const result = clientSchema.safeParse(draft);
+    if (!result.success) {
+      const fieldErrors: ClientFormErrors = {};
+      for (const issue of result.error.issues) {
+        const path = issue.path[0] as keyof ClientDraft;
+        if (path && !fieldErrors[path]) {
+          fieldErrors[path] = issue.message;
+        }
+      }
+      setErrors(fieldErrors);
+      toast.error("Corrija os campos com erro antes de salvar.");
       return;
     }
+
+    setErrors({});
     const client = createClient(draft);
-    toast.success("Cliente cadastrado.");
+    toast.success("Cliente cadastrado com sucesso.");
     router.push(`/clientes/${client.id}`);
   };
 
@@ -47,7 +60,7 @@ export default function NovoClientePage() {
       />
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <ClientForm draft={draft} onChange={setDraft} />
+          <ClientForm draft={draft} onChange={setDraft} errors={errors} />
           <div className="mt-4 flex justify-end">
             <button
               type="button"
@@ -62,3 +75,4 @@ export default function NovoClientePage() {
     </div>
   );
 }
+

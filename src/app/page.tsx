@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { EmptyState } from "@/components/shell/EmptyState";
+import { LoadingState } from "@/components/shell/LoadingState";
 import { StatusBadge } from "@/components/shell/StatusBadge";
 import { StatTile } from "@/components/dashboard/StatTile";
 import { MonthlyQuotesChart, MonthlyPoint } from "@/components/dashboard/MonthlyQuotesChart";
@@ -14,9 +15,7 @@ import { DollarSign, Percent, Receipt, Users } from "lucide-react";
 
 const MONTH_LABEL = new Intl.DateTimeFormat("pt-BR", { month: "short" });
 
-function monthKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth()}`;
-}
+const monthKey = (date: Date): string => `${date.getFullYear()}-${date.getMonth()}`;
 
 export default function DashboardPage() {
   const { quotes, clients, hydrated } = useAppData();
@@ -71,7 +70,7 @@ export default function DashboardPage() {
   const clientName = (id: string | null) => (id ? clients.find((c) => c.id === id)?.nomeCompleto : undefined);
 
   if (!hydrated) {
-    return <div className="flex h-full items-center justify-center py-24 text-sm text-slate-400">Carregando…</div>;
+    return <LoadingState />;
   }
 
   return (

@@ -33,15 +33,15 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 
-function isActive(pathname: string, item: NavItem): boolean {
+const isActive = (pathname: string, item: NavItem): boolean => {
   if (item.matchPrefix) return pathname === item.href || pathname.startsWith(item.matchPrefix);
   return pathname === item.href;
-}
+};
 
 /** Sidebar retrátil (shadcn/ui) — colapsa pra uma barra só de ícones em
  * telas médias/grandes (ver botão em PageHeader). No mobile continua
  * usando o BottomNav abaixo, não o modo "sheet" do shadcn. */
-export function AppSidebar() {
+export const AppSidebar = () => {
   const pathname = usePathname();
 
   return (
@@ -91,9 +91,9 @@ export function AppSidebar() {
       <SidebarRail />
     </Sidebar>
   );
-}
+};
 
-export function BottomNav() {
+export const BottomNav = () => {
   const pathname = usePathname();
 
   return (
@@ -116,4 +116,4 @@ export function BottomNav() {
       })}
     </nav>
   );
-}
+};

@@ -10,7 +10,7 @@ interface UploadCardProps {
   previewUrl: string | null;
 }
 
-export function UploadCard({ onExtract, loading, error, previewUrl }: UploadCardProps) {
+export const UploadCard = ({ onExtract, loading, error, previewUrl }: UploadCardProps) => {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 

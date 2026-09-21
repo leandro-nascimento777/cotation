@@ -1,13 +1,15 @@
 import { AgencyInfo, QuoteItem } from "./types";
-import { formatCurrencyBRL, validityDateTimePtBR } from "./format";
+import { formatCurrencyBRL, formatWhatsAppLink, validityDateTimePtBR } from "./format";
 import { groupQuoteItems } from "./groupQuoteItems";
+
+export { formatWhatsAppLink };
 
 /** Gera o texto formatado (Markdown do WhatsApp: *negrito*, _itálico_) a
  * partir dos itens selecionados e dos dados da agência. Quando há mais de
  * um tipo de trecho selecionado (ex: voos de ida separados de voos de
  * volta), separa em seções "Ida"/"Volta", cada uma com seu próprio "a
  * partir de". */
-export function buildWhatsAppText(items: QuoteItem[], agency: AgencyInfo): string {
+export const buildWhatsAppText = (items: QuoteItem[], agency: AgencyInfo): string => {
   const selected = items.filter((i) => i.selected);
   if (selected.length === 0) {
     return "_Selecione ao menos uma opção de voo para gerar o texto._";
@@ -83,4 +85,4 @@ export function buildWhatsAppText(items: QuoteItem[], agency: AgencyInfo): strin
   }
 
   return lines.join("\n");
-}
+};

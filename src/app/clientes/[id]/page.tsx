@@ -5,20 +5,25 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAppData } from "@/lib/store/AppDataContext";
-import { ClientForm } from "@/components/clientes/ClientForm";
+import { ClientForm, ClientFormErrors } from "@/components/clientes/ClientForm";
+import { ClientPassengersSection } from "@/components/clientes/ClientPassengersSection";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { StatusBadge } from "@/components/shell/StatusBadge";
 import { EmptyState } from "@/components/shell/EmptyState";
+import { LoadingState } from "@/components/shell/LoadingState";
 import { NewQuoteButton } from "@/components/shell/NewQuoteButton";
+import { clientSchema } from "@/lib/validation/schemas";
 import { formatCurrencyBRL } from "@/lib/format";
-import { PAYMENT_METHOD_LABEL } from "@/lib/store/types";
+import { ClientDraft, PAYMENT_METHOD_LABEL } from "@/lib/store/types";
 import { ArrowLeft, Pencil, Receipt, Trash2 } from "lucide-react";
 
 export default function ClientDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { getClient, updateClient, deleteClient, quotes, hydrated } = useAppData();
+  const { getClient, updateClient, addClientPassenger, deleteClient, quotes, hydrated } = useAppData();
   const [editing, setEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState<ClientDraft | null>(null);
+  const [errors, setErrors] = useState<ClientFormErrors>({});
 
   const client = getClient(params.id);
   const clientQuotes = useMemo(
@@ -27,7 +32,7 @@ export default function ClientDetailPage() {
   );
 
   if (!hydrated) {
-    return <div className="flex h-full items-center justify-center py-24 text-sm text-slate-400">Carregando…</div>;
+    return <LoadingState />;
   }
 
   if (!client) {
@@ -42,6 +47,42 @@ export default function ClientDetailPage() {
       </div>
     );
   }
+
+  const startEdit = () => {
+    setEditDraft({
+      nomeCompleto: client.nomeCompleto,
+      cpf: client.cpf,
+      email: client.email,
+      telefone: client.telefone,
+      endereco: client.endereco,
+      cidade: client.cidade,
+      observacoes: client.observacoes,
+    });
+    setErrors({});
+    setEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editDraft) return;
+    const result = clientSchema.safeParse(editDraft);
+    if (!result.success) {
+      const fieldErrors: ClientFormErrors = {};
+      for (const issue of result.error.issues) {
+        const path = issue.path[0] as keyof ClientDraft;
+        if (path && !fieldErrors[path]) {
+          fieldErrors[path] = issue.message;
+        }
+      }
+      setErrors(fieldErrors);
+      toast.error("Corrija os erros antes de salvar.");
+      return;
+    }
+
+    updateClient(client.id, editDraft);
+    setEditing(false);
+    setErrors({});
+    toast.success("Cliente atualizado com sucesso.");
+  };
 
   const handleDelete = () => {
     if (!confirm(`Excluir o cliente "${client.nomeCompleto}"? Isso não apaga as cotações já feitas para ele.`)) return;
@@ -69,7 +110,7 @@ export default function ClientDetailPage() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setEditing((v) => !v)}
+                onClick={() => (editing ? setEditing(false) : startEdit())}
                 className="flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
               >
                 <Pencil className="h-3.5 w-3.5" /> {editing ? "Cancelar" : "Editar"}
@@ -84,16 +125,13 @@ export default function ClientDetailPage() {
             </div>
           </div>
 
-          {editing ? (
+          {editing && editDraft ? (
             <>
-              <ClientForm draft={client} onChange={(draft) => updateClient(client.id, draft)} />
+              <ClientForm draft={editDraft} onChange={setEditDraft} errors={errors} />
               <div className="mt-4 flex justify-end">
                 <button
                   type="button"
-                  onClick={() => {
-                    setEditing(false);
-                    toast.success("Cliente atualizado.");
-                  }}
+                  onClick={handleSaveEdit}
                   className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
                 >
                   Salvar alterações
@@ -131,6 +169,12 @@ export default function ClientDetailPage() {
             </dl>
           )}
         </section>
+        <ClientPassengersSection
+          clientId={client.id}
+          passengers={client.passageiros || []}
+          onAddPassenger={addClientPassenger}
+        />
+
 
         <section>
           <h2 className="mb-3 text-sm font-semibold text-slate-700">Histórico de cotações</h2>

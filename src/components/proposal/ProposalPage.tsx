@@ -1,22 +1,13 @@
 import { ProposalResponseForm } from "./ProposalResponseForm";
+import { BoardingPassTicket } from "./BoardingPassTicket";
 import { getProposalTheme } from "@/lib/proposal/themes";
 import { validityDateTimePtBR } from "@/lib/format";
 import { PAYMENT_METHOD_LABEL, PaymentMethodType } from "@/lib/store/types";
 import { QuoteItem } from "@/lib/types";
 import { ProposalAgencySnapshot, ProposalClientSnapshot } from "@/lib/proposal/actions";
 import { Prisma } from "@prisma/client";
-import { PlaneTakeoff } from "lucide-react";
 
 type ProposalShareRow = Prisma.ProposalShareGetPayload<Record<string, never>>;
-
-function InfoBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="space-y-1">
-      <span className="block text-xs font-bold tracking-wider text-slate-400 uppercase">{label}</span>
-      <span className="block text-sm font-bold text-slate-900">{value}</span>
-    </div>
-  );
-}
 
 const WAVE_PATHS = [
   {
@@ -33,7 +24,7 @@ const WAVE_PATHS = [
   },
 ];
 
-export function ProposalPage({ share }: { share: ProposalShareRow }) {
+export const ProposalPage = ({ share }: { share: ProposalShareRow }) => {
   const theme = getProposalTheme(share.themeId);
   const flightItems = share.flightItems as unknown as QuoteItem[];
   const agencySnap = share.agencySnapshot as unknown as ProposalAgencySnapshot;
@@ -42,23 +33,17 @@ export function ProposalPage({ share }: { share: ProposalShareRow }) {
     ? { decision: share.clientDecision, observation: share.clientObservation }
     : null;
 
-  const passengerParts = [
-    `${share.adults} adulto${share.adults === 1 ? "" : "s"}`,
-    share.children ? `${share.children} criança${share.children === 1 ? "" : "s"}` : null,
-    share.infants ? `${share.infants} bebê${share.infants === 1 ? "" : "s"}` : null,
-  ].filter(Boolean);
-
   const paymentMethodLabel = share.paymentMethod
     ? PAYMENT_METHOD_LABEL[share.paymentMethod as PaymentMethodType]
     : "A combinar com a agência.";
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-4xl space-y-8 pb-16">
+    <div className="min-h-screen bg-slate-100 px-4 py-8 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+      <div className="mx-auto max-w-5xl lg:max-w-6xl xl:max-w-[1440px] 2xl:max-w-[1560px] space-y-8 pb-16">
         <div className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)]">
           {/* Capa */}
           <div
-            className="relative flex min-h-[360px] flex-col justify-end bg-cover bg-center px-6 py-10 text-white sm:min-h-[400px] sm:px-10 sm:py-14"
+            className="relative flex min-h-[380px] flex-col justify-end bg-cover bg-center px-6 py-10 text-white sm:min-h-[440px] md:min-h-[480px] sm:px-10 sm:py-14 lg:px-14"
             style={{ backgroundImage: `url(${share.coverImageUrl || theme.imageUrl})` }}
           >
             {/* Vinheta bem sutil só pra suavizar a transição com a onda —
@@ -77,45 +62,28 @@ export function ProposalPage({ share }: { share: ProposalShareRow }) {
             </div>
 
             <div className="relative z-10 flex flex-col justify-end pb-8">
-              <div className="max-w-xl space-y-4 rounded-2xl border border-white/15 bg-black/15 p-5 shadow-lg backdrop-blur-md sm:p-6">
-                <div className="space-y-2">
-                  <h1 className="text-3xl leading-none font-black tracking-tight uppercase sm:text-4xl md:text-5xl">
-                    {share.coverTitle}
-                  </h1>
-                  {share.coverSubtitle ? (
-                    <p className="text-sm leading-relaxed font-medium text-white/85 sm:text-base">{share.coverSubtitle}</p>
-                  ) : null}
-                </div>
-                <div className="border-t border-white/15 pt-4">
-                  <p className="text-base font-bold tracking-wide sm:text-lg">{share.numero}</p>
-                  <p className="text-xs font-semibold text-white/70 sm:text-sm">{agencySnap.agencyName}</p>
-                </div>
+              <div className="w-fit max-w-full rounded-2xl border border-white/15 bg-gradient-to-r from-black/[0.04] via-[#5E17EB]/[0.03] to-white/[0.02] px-6 py-3.5 sm:px-8 sm:py-4 shadow-lg backdrop-blur-md">
+                <h1 className="text-xl font-black tracking-tight uppercase text-white whitespace-nowrap leading-none sm:text-2xl md:text-3xl lg:text-4xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
+                  {share.coverTitle}
+                </h1>
               </div>
             </div>
           </div>
 
-          {/* Faixa índigo + resumo flutuante */}
-          <div className="relative flex flex-col items-center bg-indigo-500 px-6 pt-12 pb-8 sm:px-10">
-            <div className="relative z-20 -mt-20 w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
-              <h2 className="mb-5 border-b border-slate-200 pb-3 text-sm font-bold tracking-wider text-slate-900 uppercase">
-                Resumo da Viagem
-              </h2>
-              <div className="grid grid-cols-1 gap-6 text-sm sm:grid-cols-2 md:grid-cols-3">
-                <InfoBlock label="Cliente" value={clientSnap?.nomeCompleto || "—"} />
-                <InfoBlock label="Destino" value={share.destino || "—"} />
-                <InfoBlock label="Ida" value={share.periodoInicio || "—"} />
-                <InfoBlock label="Volta" value={share.periodoFim || "—"} />
-                <InfoBlock label="Passageiros" value={passengerParts.join(", ") || "—"} />
-              </div>
-              <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-200 pt-4">
-                <span className="flex items-center gap-1.5 rounded-full bg-indigo-500/10 px-3.5 py-1.5 text-xs font-bold text-indigo-600">
-                  <PlaneTakeoff className="h-3 w-3" /> Aéreo
-                </span>
-              </div>
+          {/* Faixa roxa oficial com o Bilhete de Embarque (Boarding Pass - Anexo 1) */}
+          <div className="relative flex flex-col items-center bg-[#5E17EB] px-6 pt-10 pb-10 sm:px-10 md:px-12 lg:px-14">
+            <div className="relative z-20 -mt-20 sm:-mt-24 md:-mt-28 w-full">
+              <BoardingPassTicket
+                numero={share.numero}
+                clientName={clientSnap?.nomeCompleto || "CLIENTE"}
+                passengerNames={clientSnap?.passageirosNomes}
+                totalPassengers={share.adults + share.children + share.infants}
+                periodoInicio={share.periodoInicio}
+                periodoFim={share.periodoFim}
+                destino={share.destino}
+                items={flightItems}
+              />
             </div>
-            <p className="relative z-20 mt-6 max-w-lg text-center text-xs font-medium text-white/90 italic">
-              Próximo passo: confirme a proposta e envie os dados dos passageiros para reserva/emissão.
-            </p>
           </div>
         </div>
 
@@ -151,6 +119,15 @@ export function ProposalPage({ share }: { share: ProposalShareRow }) {
             paymentMethodLabel={paymentMethodLabel}
             agencyObservations={share.observacoes || ""}
             validityLabel={validityDateTimePtBR(share.validityHours, share.createdAt)}
+            adultsCount={share.adults}
+            childrenCount={share.children}
+            infantsCount={share.infants}
+            clientSnapshot={clientSnap}
+            agencySnapshot={agencySnap}
+            proposalNumero={share.numero}
+            destino={share.destino || ""}
+            periodoInicio={share.periodoInicio}
+            periodoFim={share.periodoFim}
           />
         </div>
 

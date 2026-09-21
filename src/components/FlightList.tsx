@@ -2,13 +2,14 @@
 
 import { FlightLeg, legKind, LegKind, QuoteItem } from "@/lib/types";
 import { formatCurrencyBRL } from "@/lib/format";
+import { groupByRow } from "@/lib/groupQuoteItems";
 import { Luggage, PlaneLanding, PlaneTakeoff } from "lucide-react";
+import { AirlineLogo } from "@/components/ui/AirlineLogo";
 
 interface FlightListProps {
   items: QuoteItem[];
   onToggle?: (rowId: string, fareId: string) => void;
-  /** Modo somente-leitura: some com os checkboxes e só lista as tarifas já
-   * selecionadas (usado no modal de detalhes da cotação). */
+  /** Modo somente-leitura: some com os checkboxes e só lista as tarifas já selecionadas. */
   readOnly?: boolean;
 }
 
@@ -18,40 +19,37 @@ const GROUP_LABEL: Record<LegKind, string> = {
   volta: "Volta",
 };
 
-export function LegLine({ leg, icon: Icon }: { leg: FlightLeg; icon: typeof PlaneTakeoff }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
-      <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-      <span className="font-medium text-slate-700">
-        {leg.airline} {leg.flightNumber}
-      </span>
-      <span>· {leg.date}</span>
-      <span>
-        · {leg.origin} → {leg.destination}
-      </span>
-      <span>
-        · {leg.departureTime}–{leg.arrivalTime}
-      </span>
-      <span>· {leg.duration}</span>
-      <span>· {leg.stops === 0 ? "direto" : `${leg.stops} conexão(ões)`}</span>
-      {leg.aircraft ? <span>· {leg.aircraft}</span> : null}
-    </div>
-  );
-}
+export const LegLine = ({ leg, icon: Icon }: { leg: FlightLeg; icon?: typeof PlaneTakeoff }) => (
+  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
+    {Icon ? <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" /> : null}
+    <AirlineLogo airline={leg.airline} flightNumber={leg.flightNumber} className="h-5 w-5" />
+    <span className="font-bold text-slate-800">
+      {leg.airline} {leg.flightNumber}
+    </span>
+    <span>· {leg.date}</span>
+    <span>
+      · {leg.origin} → {leg.destination}
+    </span>
+    <span>
+      · {leg.departureTime}–{leg.arrivalTime}
+    </span>
+    <span>· {leg.duration}</span>
+    <span>· {leg.stops === 0 ? "direto" : `${leg.stops} conexão(ões)`}</span>
+    {leg.aircraft ? <span>· {leg.aircraft}</span> : null}
+  </div>
+);
 
-function FlightRowCard({
-  rowId,
-  fares,
-  onToggle,
-  readOnly,
-}: {
+interface FlightRowCardProps {
   rowId: string;
   fares: QuoteItem[];
   onToggle?: (rowId: string, fareId: string) => void;
   readOnly?: boolean;
-}) {
+}
+
+const FlightRowCard = ({ rowId, fares, onToggle, readOnly }: FlightRowCardProps) => {
   const base = fares[0];
   const kind = legKind(base);
+
   return (
     <div key={rowId} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-3 flex flex-col gap-1.5">
@@ -104,21 +102,16 @@ function FlightRowCard({
       </div>
     </div>
   );
-}
+};
 
-export function FlightList({ items, onToggle, readOnly = false }: FlightListProps) {
+export const FlightList = ({ items, onToggle, readOnly = false }: FlightListProps) => {
   const displayItems = readOnly ? items.filter((i) => i.selected) : items;
   if (displayItems.length === 0) return null;
 
-  // Agrupa por linha de voo (rowId) pra mostrar as tarifas juntas, depois
-  // por tipo (combo/ida/volta) — títulos de seção só aparecem quando há
-  // mais de um tipo presente (evita ruído visual no caso comum, que é só
-  // uma tabela de ida).
-  const rowIds = Array.from(new Set(displayItems.map((i) => i.rowId)));
-  const rowsByKind: Record<LegKind, string[]> = { combo: [], ida: [], volta: [] };
-  for (const rowId of rowIds) {
-    const first = displayItems.find((i) => i.rowId === rowId)!;
-    rowsByKind[legKind(first)].push(rowId);
+  const rowGroups = groupByRow(displayItems);
+  const rowsByKind: Record<LegKind, typeof rowGroups> = { combo: [], ida: [], volta: [] };
+  for (const g of rowGroups) {
+    rowsByKind[legKind(g.fares[0])].push(g);
   }
   const presentKinds = (["combo", "ida", "volta"] as const).filter((k) => rowsByKind[k].length > 0);
   const showSectionHeaders = presentKinds.length > 1;
@@ -135,12 +128,12 @@ export function FlightList({ items, onToggle, readOnly = false }: FlightListProp
           {showSectionHeaders ? (
             <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">{GROUP_LABEL[kind]}</h3>
           ) : null}
-          {rowsByKind[kind].map((rowId) => {
-            const fares = displayItems.filter((i) => i.rowId === rowId);
-            return <FlightRowCard key={rowId} rowId={rowId} fares={fares} onToggle={onToggle} readOnly={readOnly} />;
-          })}
+          {rowsByKind[kind].map((g) => (
+            <FlightRowCard key={g.rowId} rowId={g.rowId} fares={g.fares} onToggle={onToggle} readOnly={readOnly} />
+          ))}
         </div>
       ))}
     </div>
   );
-}
+};
+
