@@ -1,16 +1,15 @@
-/* ==========================================================================
-   style.css — Estilos do template de orçamento de viagem
-   Todas as cores de marca ficam centralizadas nas variáveis abaixo em :root.
-   Para reaproveitar este template em outra agência/marca, troque apenas
-   essas variáveis — nenhuma cor está "hardcoded" no restante do arquivo.
-   ========================================================================== */
+/**
+ * Estilos base e específicos para renderização de cotação de voos em PDF.
+ * Consolidado a partir dos templates de design (sem dependência de I/O em disco).
+ */
 
+export const FLIGHT_QUOTE_BASE_CSS = `
 :root {
-  --cor-primaria: #1b4f8c;       /* barras de título de seção, títulos, bordas de destaque */
-  --cor-primaria-clara: #eaf0f8; /* fundo leve derivado da cor primária (cabeçalho de tabela) */
-  --cor-destaque: #8a2be2;       /* banner de agradecimento */
-  --cor-destaque-texto: #ffffff; /* texto sobre o banner de destaque */
-  --cor-borda: #cccccc;          /* bordas de tabela e caixas */
+  --cor-primaria: #1b4f8c;
+  --cor-primaria-clara: #eaf0f8;
+  --cor-destaque: #8a2be2;
+  --cor-destaque-texto: #ffffff;
+  --cor-borda: #cccccc;
   --cor-texto: #222222;
   --cor-texto-suave: #555555;
   --fonte: Arial, Helvetica, "Helvetica Neue", sans-serif;
@@ -18,11 +17,6 @@
 
 * {
   box-sizing: border-box;
-}
-
-@page {
-  size: A4 portrait;
-  margin: 15mm;
 }
 
 body {
@@ -39,11 +33,6 @@ p {
 }
 
 /* ---------- Cabeçalho ---------- */
-
-/* Observação: o cabeçalho usa "display: table" (não flexbox) de propósito.
-   O motor do WeasyPrint tem um bug de flexbox que sobrepõe os itens quando
-   um deles (a caixa de logo, com altura fixa) é bem mais alto que o outro
-   (poucas linhas de texto). Layout de tabela é robusto para esse caso. */
 .header {
   display: table;
   width: 100%;
@@ -110,7 +99,6 @@ p {
 }
 
 /* ---------- Linha de data / número do orçamento ---------- */
-
 .linha-data {
   display: flex;
   justify-content: space-between;
@@ -133,7 +121,6 @@ p {
 }
 
 /* ---------- Banner de agradecimento ---------- */
-
 .banner-destaque {
   background: var(--cor-destaque);
   color: var(--cor-destaque-texto);
@@ -149,61 +136,7 @@ p {
   font-weight: bold;
 }
 
-/* ---------- Bloco Pacote + Totais ---------- */
-
-.pacote-totais {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-}
-
-.pacote-info {
-  flex: 1 1 auto;
-  font-size: 10px;
-}
-
-.pacote-titulo {
-  font-size: 13px;
-  font-weight: bold;
-  color: var(--cor-texto);
-  margin-bottom: 4px;
-}
-
-.bagagem-obs {
-  font-weight: bold;
-  margin-top: 4px;
-}
-
-.totais-box {
-  flex: 0 0 260px;
-  border: 1px solid var(--cor-borda);
-  padding: 8px 10px;
-}
-
-.totais-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.totais-table td {
-  padding: 3px 0;
-  font-size: 11px;
-}
-
-.totais-table td.valor {
-  text-align: right;
-}
-
-.totais-table tr.linha-total-final td {
-  font-size: 15px;
-  font-weight: bold;
-  padding-top: 6px;
-  border-top: 1px solid var(--cor-borda);
-}
-
-/* ---------- Seções (título em barra colorida) ---------- */
-
+/* ---------- Seções e Tabelas ---------- */
 .secao {
   margin-bottom: 14px;
 }
@@ -219,21 +152,6 @@ p {
   align-items: center;
   gap: 6px;
 }
-
-.titulo-secao .icone {
-  display: inline-flex;
-  width: 14px;
-  height: 14px;
-  flex: 0 0 auto;
-}
-
-.titulo-secao .icone svg {
-  width: 100%;
-  height: 100%;
-  fill: #ffffff;
-}
-
-/* ---------- Tabelas ---------- */
 
 .tabela {
   width: 100%;
@@ -269,28 +187,6 @@ p {
   font-weight: bold;
 }
 
-/* ---------- Hospedagem ---------- */
-
-.hotel-nome {
-  font-weight: bold;
-  font-size: 11px;
-  margin-bottom: 2px;
-}
-
-.hotel-endereco {
-  margin-bottom: 6px;
-  color: var(--cor-texto-suave);
-}
-
-.hotel-descricao {
-  text-align: justify;
-  margin-bottom: 8px;
-  font-size: 9.5px;
-  color: var(--cor-texto-suave);
-}
-
-/* ---------- Informações importantes ---------- */
-
 .secao-final .texto-livre {
   font-size: 9.5px;
   color: var(--cor-texto-suave);
@@ -300,3 +196,136 @@ p {
 .secao-final .texto-livre p {
   margin: 0 0 6px 0;
 }
+
+/* ---------- Estilos específicos de voos (flight-quote.css) ---------- */
+.voo-grupo-titulo {
+  margin: 0 0 6px 0;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--cor-primaria);
+}
+
+.voo-card {
+  border: 1px solid var(--cor-borda);
+  border-radius: 3px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  page-break-inside: avoid;
+}
+
+.voo-card-header {
+  background: var(--cor-primaria);
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.voo-card-preco {
+  font-size: 12px;
+}
+
+.voo-card-body {
+  padding: 8px 10px;
+}
+
+.voo-leg-label {
+  margin: 0 0 3px 0;
+  font-size: 8px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--cor-primaria);
+}
+
+.voo-leg-divisor {
+  height: 1px;
+  background: var(--cor-borda);
+  margin: 8px 0;
+}
+
+.voo-meta-final {
+  margin-top: 6px;
+}
+
+.voo-rota {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.voo-rota-origem {
+  flex: 1;
+}
+
+.voo-rota-destino {
+  flex: 1;
+  text-align: right;
+}
+
+.voo-seta {
+  color: var(--cor-texto-suave);
+  margin: 0 10px;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.voo-aeroporto {
+  font-size: 11px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.voo-horario {
+  font-size: 9px;
+  color: var(--cor-texto-suave);
+  margin: 0;
+}
+
+.voo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 6px;
+  border-top: 1px solid var(--cor-borda);
+  font-size: 9px;
+  color: var(--cor-texto-suave);
+}
+
+.voo-meta strong {
+  color: var(--cor-texto);
+}
+
+.valor-a-partir-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--cor-primaria-clara);
+  border: 1px solid var(--cor-borda);
+  border-radius: 3px;
+  padding: 8px 12px;
+  margin-top: 4px;
+  margin-bottom: 14px;
+}
+
+.valor-a-partir-valor {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--cor-primaria);
+}
+
+.rodape {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  color: var(--cor-texto-suave);
+  border-top: 1px solid var(--cor-borda);
+  padding-top: 6px;
+  margin-top: 20px;
+}
+`;

@@ -1,8 +1,7 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { FlightQuoteTemplateData } from "./buildFlightQuoteData";
 import { escapeHtml, nl2br } from "./htmlUtils";
 import { getAirlineLogoUrl } from "../airlineLogo";
+import { FLIGHT_QUOTE_BASE_CSS } from "./flightQuoteCss";
 
 export { escapeHtml };
 
@@ -10,28 +9,8 @@ type TemplateGrupo = FlightQuoteTemplateData["grupos"][number];
 type TemplateOpcao = TemplateGrupo["opcoes"][number];
 type TemplateLeg = NonNullable<TemplateOpcao["ida"]>;
 
-// Reaproveita as MESMAS folhas de estilo do template Jinja2/WeasyPrint em
-// pdf-template/ (style.css + flight-quote.css) — uma única fonte de verdade
-// de design para os dois pipelines de geração de PDF (Python standalone e
-// Node/Puppeteer usado pelo app). Só a "montagem" do HTML muda.
-const PDF_TEMPLATE_DIR = path.join(process.cwd(), "pdf-template");
-
-let cachedCss: string | null = null;
-async function loadCss(): Promise<string> {
-  if (cachedCss) return cachedCss;
-  const [base, flightQuote] = await Promise.all([
-    readFile(path.join(PDF_TEMPLATE_DIR, "style.css"), "utf8"),
-    readFile(path.join(PDF_TEMPLATE_DIR, "flight-quote.css"), "utf8"),
-  ]);
-  // O Puppeteer controla o tamanho/margem da página via page.pdf({ format,
-  // margin }) — a regra @page do style.css (pensada pro WeasyPrint) é
-  // removida aqui porque o Chromium a respeita de um jeito que ANULA a
-  // opção `margin` do page.pdf() (testado: com "@page { margin: 0 }" no
-  // CSS, a margem passada em page.pdf() é ignorada e o conteúdo cola nas
-  // bordas). Sem nenhuma regra @page, page.pdf({ margin }) funciona normal.
-  const stripPageRule = (css: string) => css.replace(/@page\s*{[^}]*}/g, "");
-  cachedCss = `${stripPageRule(base)}\n${stripPageRule(flightQuote)}`;
-  return cachedCss;
+function loadCss(): string {
+  return FLIGHT_QUOTE_BASE_CSS;
 }
 
 function renderHeader(data: FlightQuoteTemplateData): string {
@@ -193,7 +172,7 @@ function renderColorOverrides(data: FlightQuoteTemplateData): string {
 }
 
 export async function renderFlightQuoteHtml(data: FlightQuoteTemplateData): Promise<string> {
-  const css = await loadCss();
+  const css = loadCss();
   const totalOpcoes = data.grupos.reduce((sum, g) => sum + g.opcoes.length, 0);
   return `<!DOCTYPE html>
 <html lang="pt-BR">

@@ -153,10 +153,8 @@ A aplicação adota um padrão de persistência de alta performance:
 A API `/api/pdf`:
 
 1. Mapeia os itens selecionados + dados da agência/cotação (`buildFlightQuoteData.ts`).
-2. Monta o HTML da cotação em JS (`renderFlightQuoteHtml.ts`), injetando os
-   dados nas mesmas folhas de estilo (`pdf-template/style.css` +
-   `flight-quote.css`) usadas pelo template Jinja2 — um único design
-   compartilhado pelos dois pipelines. Cores customizadas (Configurações)
+2. Monta o HTML da cotação em JS (`renderFlightQuoteHtml.ts`), com estilização
+   otimizada e modular (`flightQuoteCss.ts`). Cores customizadas (Configurações)
    entram como um `<style>` de override no final.
 3. Renderiza esse HTML em PDF com Chromium headless via Puppeteer
    (`renderPdf.ts`):
@@ -166,11 +164,6 @@ A API `/api/pdf`:
      `@sparticuz/chromium`, um build de Chromium enxuto com as libs nativas
      já vinculadas estaticamente, feito pra rodar dentro dos limites de uma
      function serverless — por isso funciona na Vercel sem infra extra.
-
-O `pdf-template/` (Python + Jinja2 + WeasyPrint) continua existindo como
-**entregável standalone** — útil se você quiser gerar orçamentos fora do
-Next.js, por linha de comando, ou reaproveitar o design em outro projeto.
-Veja o README daquela pasta para instruções.
 
 ## CNPJ e Cadastur
 

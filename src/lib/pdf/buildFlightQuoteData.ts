@@ -29,8 +29,7 @@ interface TemplateGrupo {
   valor_a_partir: string;
 }
 
-/** Formato esperado pelo template Jinja2 `flight-quote.html`
- * (ver pdf-template/flight-quote.html e pdf-template/README.md). */
+/** Formato dos dados da cotação de voos para renderização do PDF. */
 export interface FlightQuoteTemplateData {
   logo_url: string;
   agencia_nome: string;
