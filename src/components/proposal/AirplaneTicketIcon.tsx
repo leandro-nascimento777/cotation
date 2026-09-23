@@ -1,10 +1,17 @@
 "use client";
 
-export const AirplaneTicketIcon = ({ className = "h-16 w-36 sm:h-20 sm:w-44 md:h-24 md:w-52 lg:h-28 lg:w-60 text-[#6E44FF]" }: { className?: string }) => {
+export const AirplaneTicketIcon = ({
+  className = "h-16 w-36 sm:h-20 sm:w-44 md:h-24 md:w-52 lg:h-28 lg:w-60 text-[#6E44FF]",
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) => {
   return (
     <svg
       viewBox="0 0 116 84"
       className={className}
+      style={style}
       fill="currentColor"
       xmlns="http://www.w3.org/2000/svg"
     >

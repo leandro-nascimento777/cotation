@@ -228,6 +228,26 @@ export function TravelerCheckoutView({
           setAgencySuccessBookingRef(res.bookingRef);
         } else {
           setSuccessBookingRef(res.bookingRef);
+          // Registra no painel da agência como pedido online aprovado que aguarda emissão
+          try {
+            const raw = localStorage.getItem("cotation:pendingIssuances");
+            const list = raw ? JSON.parse(raw) : [];
+            const newPending = {
+              id: `pend-${Date.now()}`,
+              createdAt: new Date().toISOString(),
+              orderRef: res.bookingRef,
+              shareId,
+              clienteNome: `${travelers[0]?.nome || ""} ${travelers[0]?.sobrenome || ""}`.trim() || contact.email,
+              clienteEmail: contact.email,
+              clienteTelefone: `${contact.countryCode} ${contact.areaCode} ${contact.phone}`.trim(),
+              passageiros: clientPassengersToSave,
+              trechosDescricao: `${originInfo.cidade} ➔ ${destInfo.cidade}`,
+              valorPago: paymentData.total,
+              metodoPagamento: paymentData.method,
+              status: "PENDENTE",
+            };
+            localStorage.setItem("cotation:pendingIssuances", JSON.stringify([newPending, ...list]));
+          } catch {}
         }
         onSuccessOrder?.(res.bookingRef);
       } else {

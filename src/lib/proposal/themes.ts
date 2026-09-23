@@ -24,6 +24,13 @@ export const PROPOSAL_THEMES: ProposalTheme[] = [
 
 export const DEFAULT_THEME_ID = "aereo";
 
+export const DEFAULT_NEXT_STEPS = [
+  "Escolha a opção final (com ou sem extras).",
+  "Envie os dados dos passageiros: nome completo, nascimento, documento.",
+  "Informe a forma de pagamento escolhida.",
+  "Após a aprovação, nossa equipe emitirá os bilhetes e enviará o voucher de confirmação.",
+].join("\n");
+
 export function getProposalTheme(themeId: string): ProposalTheme {
   return PROPOSAL_THEMES.find((t) => t.id === themeId) ?? PROPOSAL_THEMES[0];
 }

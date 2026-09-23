@@ -1,4 +1,10 @@
-export const TicketBarcode = ({ code = "123 456 789 10 11 12" }: { code?: string }) => {
+export const TicketBarcode = ({
+  code = "123 456 789 10 11 12",
+  color = "#6E44FF",
+}: {
+  code?: string;
+  color?: string;
+}) => {
   // Padrão de barras Code 128 / EAN vetorial robusto, largo e nítido
   const barPattern = [
     3, 2, 2, 4, 1, 3, 4, 2, 2, 3, 5, 2, 3, 2, 2, 4, 3, 2, 2, 5, 2, 3, 2, 4,
@@ -38,8 +44,8 @@ export const TicketBarcode = ({ code = "123 456 789 10 11 12" }: { code?: string
           ))}
         </svg>
         <span
-          className="font-ticket text-[11px] sm:text-[13px] md:text-[14px] font-bold tracking-[0.32em] text-[#6E44FF] select-none [writing-mode:vertical-rl] rotate-180"
-          style={{ letterSpacing: "0.32em" }}
+          className="font-ticket text-[11px] sm:text-[13px] md:text-[14px] font-bold tracking-[0.32em] select-none [writing-mode:vertical-rl] rotate-180"
+          style={{ letterSpacing: "0.32em", color }}
         >
           {code}
         </span>

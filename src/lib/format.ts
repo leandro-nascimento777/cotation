@@ -134,3 +134,70 @@ export const parseExtractedDateToISO = (raw: string, now = new Date()): string =
   return "";
 };
 
+/** Formata dígitos de CPF como "000.000.000-00". */
+export const formatCpf = (value?: string | null): string => {
+  if (!value) return "";
+  const d = value.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9, 11)}`;
+};
+
+/** Formata número de passaporte em caixa alta sem espaços. */
+export const formatPassport = (value?: string | null): string => {
+  if (!value) return "";
+  return value.trim().toUpperCase().replace(/\s+/g, "");
+};
+
+/** Formata telefone no padrão "DDI DDD 9NNNN-NNNN" (ex: "+55 (11) 98723-8273"). */
+export const formatPhoneWithDdi = (value?: string | null): string => {
+  if (!value) return "";
+  const raw = value.trim();
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return raw;
+
+  // Se tiver 13 dígitos e começar com 55 (Brasil: 55 + 2 DDD + 9 dígitos)
+  if (digits.length === 13 && digits.startsWith("55")) {
+    const ddi = "+55";
+    const ddd = digits.slice(2, 4);
+    const p1 = digits.slice(4, 9);
+    const p2 = digits.slice(9, 13);
+    return `${ddi} (${ddd}) ${p1}-${p2}`;
+  }
+
+  // Se tiver 12 dígitos e começar com 55 (Brasil fixo: 55 + 2 DDD + 8 dígitos)
+  if (digits.length === 12 && digits.startsWith("55")) {
+    const ddi = "+55";
+    const ddd = digits.slice(2, 4);
+    const p1 = digits.slice(4, 8);
+    const p2 = digits.slice(8, 12);
+    return `${ddi} (${ddd}) ${p1}-${p2}`;
+  }
+
+  // Se tiver 11 dígitos (Brasil celular: 2 DDD + 9 dígitos, ex: 11987238273)
+  if (digits.length === 11) {
+    const ddi = "+55";
+    const ddd = digits.slice(0, 2);
+    const p1 = digits.slice(2, 7);
+    const p2 = digits.slice(7, 11);
+    return `${ddi} (${ddd}) ${p1}-${p2}`;
+  }
+
+  // Se tiver 10 dígitos (Brasil fixo: 2 DDD + 8 dígitos, ex: 1187238273)
+  if (digits.length === 10) {
+    const ddi = "+55";
+    const ddd = digits.slice(0, 2);
+    const p1 = digits.slice(2, 6);
+    const p2 = digits.slice(6, 10);
+    return `${ddi} (${ddd}) ${p1}-${p2}`;
+  }
+
+  // Formato progressivo durante digitação caso tenha menos de 10 dígitos
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+
+  return raw;
+};
+

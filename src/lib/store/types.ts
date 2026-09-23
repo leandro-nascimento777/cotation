@@ -170,6 +170,8 @@ export interface Client {
   createdAt: string;
   nomeCompleto: string;
   cpf: string;
+  passaporte?: string;
+  avatarUrl?: string;
   email: string;
   telefone: string;
   endereco: string;
@@ -228,3 +230,90 @@ export interface Quote {
 export type QuoteDraft = Omit<Quote, "id" | "createdAt" | "updatedAt" | "numero" | "status"> & {
   status?: QuoteStatusType;
 };
+
+export type ReservationStatus = "CONFIRMADA" | "EMITIDA" | "CANCELADA";
+
+export interface ReservationPassenger {
+  id: string;
+  nome: string;
+  tipo?: string; // "Adulto" | "Criança" | "Bebê"
+  documento?: string;
+  bilheteNumero?: string;
+  assentos?: { trecho: string; assento: string }[];
+}
+
+export interface ReservationFlight {
+  id: string;
+  trechoTipo?: "IDA" | "VOLTA" | "INTERNO";
+  ciaAerea: string;
+  numeroVoo: string;
+  origemCodigo: string;
+  origemNome: string;
+  origemTerminal?: string;
+  destinoCodigo: string;
+  destinoNome: string;
+  destinoTerminal?: string;
+  dataPartida: string;
+  horaPartida: string;
+  dataChegada: string;
+  horaChegada: string;
+  classe?: string;
+  escalas?: number;
+  aeronave?: string;
+  localizadorCia?: string;
+  baseTarifaria?: string;
+  bagagem?: string;
+  assento?: string;
+}
+
+export interface Reservation {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  localizador: string; // PNR GDS / Consolidadora (ex: ANRXK4)
+  localizadorCia?: string; // PNR da Companhia Aérea para Check-in (ex: NXPLPM)
+  numeroBilhete?: string;
+  status: ReservationStatus;
+  clientId?: string | null;
+  quoteId?: string | null;
+  clienteNome: string;
+  clienteEmail?: string;
+  clienteTelefone?: string;
+  emissor?: string; // ex: Sakura Consolidadora
+  dataEmissao?: string;
+  passageiros: ReservationPassenger[];
+  voos: ReservationFlight[];
+  valorTarifa?: number;
+  valorTaxas?: number;
+  taxaServico?: number; // DU
+  valorTotal?: number;
+  moeda?: string;
+  formaPagamento?: string; // ex: Cartão de Crédito, Pix, Substituição
+  bilheteOriginal?: string;
+  observacoes?: string;
+  instrucoesEmbarque?: string;
+}
+
+export type ReservationDraft = Omit<Reservation, "id" | "createdAt" | "updatedAt">;
+
+/** Pedidos pagos online (Pix / Cartão) pelo cliente na proposta pública que aguardam emissão do bilhete pelo agente */
+export interface PendingIssuance {
+  id: string;
+  createdAt: string;
+  orderRef: string; // RES-XXXXXX
+  shareId?: string;
+  quoteId?: string;
+  clientId?: string | null;
+  clienteNome: string;
+  clienteEmail: string;
+  clienteTelefone: string;
+  passageiros: ClientPassenger[];
+  trechosDescricao: string;
+  valorPago: number;
+  metodoPagamento: "PIX" | "CARTAO" | "NUPAY";
+  status: "PENDENTE" | "EMITIDO";
+}
+
+export type PendingIssuanceDraft = Omit<PendingIssuance, "id" | "createdAt">;
+
+

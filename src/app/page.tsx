@@ -81,7 +81,7 @@ export default function DashboardPage() {
         action={<NewQuoteButton />}
       />
 
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+      <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6">
         {quotes.length === 0 ? (
           <EmptyState
             icon={Receipt}

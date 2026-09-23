@@ -9,6 +9,9 @@ import {
   parseExtractedDateToISO,
   sanitizePercentInput,
   percentInputToNumber,
+  formatCpf,
+  formatPassport,
+  formatPhoneWithDdi,
 } from "@/lib/format";
 
 describe("format (Utilitários de Formatação e Máscaras)", () => {
@@ -85,6 +88,39 @@ describe("format (Utilitários de Formatação e Máscaras)", () => {
       const fixedDate = new Date(2026, 0, 1);
       expect(parseExtractedDateToISO("18 Set", fixedDate)).toBe("2026-09-18");
       expect(parseExtractedDateToISO("05 out", fixedDate)).toBe("2026-10-05");
+    });
+  });
+
+  describe("formatCpf", () => {
+    it("deve formatar CPF com pontuação correta 000.000.000-00", () => {
+      expect(formatCpf("02007159171")).toBe("020.071.591-71");
+      expect(formatCpf("50395621813")).toBe("503.956.218-13");
+    });
+
+    it("deve lidar com entradas vazias ou nulas", () => {
+      expect(formatCpf("")).toBe("");
+      expect(formatCpf(null)).toBe("");
+    });
+  });
+
+  describe("formatPassport", () => {
+    it("deve formatar passaporte em maiúsculo sem espaços", () => {
+      expect(formatPassport("n02978256")).toBe("N02978256");
+      expect(formatPassport(" ab 123456 ")).toBe("AB123456");
+    });
+  });
+
+  describe("formatPhoneWithDdi", () => {
+    it("deve formatar telefone de 11 dígitos com DDI +55 (11) 9NNNN-NNNN", () => {
+      expect(formatPhoneWithDdi("11987238273")).toBe("+55 (11) 98723-8273");
+    });
+
+    it("deve formatar telefone que já possui DDI 55", () => {
+      expect(formatPhoneWithDdi("5511987238273")).toBe("+55 (11) 98723-8273");
+    });
+
+    it("deve formatar telefone fixo de 10 dígitos com DDI +55", () => {
+      expect(formatPhoneWithDdi("1133334444")).toBe("+55 (11) 3333-4444");
     });
   });
 });

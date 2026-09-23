@@ -1,6 +1,7 @@
 "use client";
 
 import { ClientDraft } from "@/lib/store/types";
+import { formatCpf, formatPassport, formatPhoneWithDdi } from "@/lib/format";
 import { FormField, FormTextarea } from "@/components/ui/FormField";
 
 export type ClientFormErrors = Partial<Record<keyof ClientDraft, string>>;
@@ -29,8 +30,15 @@ export const ClientForm = ({ draft, onChange, errors }: ClientFormProps) => {
           label="CPF (opcional)"
           value={draft.cpf}
           error={errors?.cpf}
-          onChange={(v) => set("cpf", v)}
+          onChange={(v) => set("cpf", formatCpf(v))}
           placeholder="000.000.000-00"
+        />
+        <FormField
+          label="Passaporte (opcional)"
+          value={draft.passaporte || ""}
+          error={errors?.passaporte}
+          onChange={(v) => set("passaporte", formatPassport(v))}
+          placeholder="Ex: N02978256"
         />
         <FormField
           label="E-mail"
@@ -44,7 +52,8 @@ export const ClientForm = ({ draft, onChange, errors }: ClientFormProps) => {
           type="tel"
           value={draft.telefone}
           error={errors?.telefone}
-          onChange={(v) => set("telefone", v)}
+          onChange={(v) => set("telefone", formatPhoneWithDdi(v))}
+          placeholder="+55 (11) 98723-8273"
         />
         <FormField
           label="Cidade"

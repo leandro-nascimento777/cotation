@@ -174,7 +174,7 @@ export default function EquipePage() {
         }
       />
 
-      <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
+      <div className="w-full flex flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8">
         {adding && (
           <MemberForm
             draft={addDraft}

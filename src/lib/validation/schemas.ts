@@ -41,7 +41,10 @@ export const clientSchema = z.object({
     ),
   cidade: z.string().trim().max(80, "Máximo de 80 caracteres.").optional().default(""),
   endereco: z.string().trim().max(200, "Máximo de 200 caracteres.").optional().default(""),
+  passaporte: z.string().trim().max(30, "Máximo de 30 caracteres.").optional().default(""),
+  avatarUrl: z.string().trim().optional().default(""),
   observacoes: z.string().trim().max(1000, "Máximo de 1000 caracteres.").optional().default(""),
+  passageiros: z.array(z.any()).optional(),
 });
 
 export type ClientSchemaInput = z.infer<typeof clientSchema>;

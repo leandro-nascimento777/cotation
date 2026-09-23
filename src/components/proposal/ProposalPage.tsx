@@ -29,6 +29,7 @@ export const ProposalPage = ({ share }: { share: ProposalShareRow }) => {
   const flightItems = share.flightItems as unknown as QuoteItem[];
   const agencySnap = share.agencySnapshot as unknown as ProposalAgencySnapshot;
   const clientSnap = share.clientSnapshot as unknown as ProposalClientSnapshot | null;
+  const primaryColor = agencySnap?.pdfCorPrimaria || "#5E17EB";
   const alreadyDecided = share.clientDecision
     ? { decision: share.clientDecision, observation: share.clientObservation }
     : null;
@@ -56,13 +57,13 @@ export const ProposalPage = ({ share }: { share: ProposalShareRow }) => {
             >
               <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="h-full w-full">
                 {WAVE_PATHS.map((wave, i) => (
-                  <path key={i} d={wave.d} fill="#6366f1" opacity={wave.opacity} />
+                  <path key={i} d={wave.d} fill={primaryColor} opacity={wave.opacity} />
                 ))}
               </svg>
             </div>
 
             <div className="relative z-10 flex flex-col justify-end pb-8">
-              <div className="w-fit max-w-full rounded-2xl border border-white/15 bg-gradient-to-r from-black/[0.04] via-[#5E17EB]/[0.03] to-white/[0.02] px-6 py-3.5 sm:px-8 sm:py-4 shadow-lg backdrop-blur-md">
+              <div className="w-fit max-w-full rounded-2xl border border-white/15 bg-gradient-to-r from-black/[0.04] via-white/[0.03] to-white/[0.02] px-6 py-3.5 sm:px-8 sm:py-4 shadow-lg backdrop-blur-md">
                 <h1 className="text-xl font-black tracking-tight uppercase text-white whitespace-nowrap leading-none sm:text-2xl md:text-3xl lg:text-4xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
                   {share.coverTitle}
                 </h1>
@@ -70,8 +71,11 @@ export const ProposalPage = ({ share }: { share: ProposalShareRow }) => {
             </div>
           </div>
 
-          {/* Faixa roxa oficial com o Bilhete de Embarque (Boarding Pass - Anexo 1) */}
-          <div className="relative flex flex-col items-center bg-[#5E17EB] px-6 pt-10 pb-10 sm:px-10 md:px-12 lg:px-14">
+          {/* Faixa oficial com o Bilhete de Embarque (Boarding Pass) */}
+          <div
+            className="relative flex flex-col items-center px-6 pt-10 pb-10 sm:px-10 md:px-12 lg:px-14"
+            style={{ backgroundColor: primaryColor }}
+          >
             <div className="relative z-20 -mt-20 sm:-mt-24 md:-mt-28 w-full">
               <BoardingPassTicket
                 numero={share.numero}
@@ -82,6 +86,7 @@ export const ProposalPage = ({ share }: { share: ProposalShareRow }) => {
                 periodoFim={share.periodoFim}
                 destino={share.destino}
                 items={flightItems}
+                primaryColor={primaryColor}
               />
             </div>
           </div>
@@ -89,7 +94,9 @@ export const ProposalPage = ({ share }: { share: ProposalShareRow }) => {
 
         {/* Barra da marca */}
         <div className="flex w-full flex-col items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-lg sm:flex-row">
-          <span className="text-sm font-black tracking-wider text-indigo-700 uppercase">{agencySnap.agencyName}</span>
+          <span className="text-sm font-black tracking-wider uppercase" style={{ color: primaryColor }}>
+            {agencySnap.agencyName}
+          </span>
           <div className="flex w-full items-center justify-between gap-2 border-t border-slate-200 pt-2 text-xs text-slate-500 sm:w-auto sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
             <div className="flex items-center gap-1">
               <span className="font-bold text-slate-800">Proposta Comercial:</span>

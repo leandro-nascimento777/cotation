@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { LoadingState } from "@/components/shell/LoadingState";
@@ -11,7 +12,13 @@ export default function NovaCotacaoPage() {
   return (
     <div>
       <PageHeader title="Nova cotação" description="Print de voos → orçamento pronto para WhatsApp e PDF." />
-      {hydrated ? <QuoteEditor /> : <LoadingState />}
+      {hydrated ? (
+        <Suspense fallback={<LoadingState />}>
+          <QuoteEditor />
+        </Suspense>
+      ) : (
+        <LoadingState />
+      )}
     </div>
   );
 }

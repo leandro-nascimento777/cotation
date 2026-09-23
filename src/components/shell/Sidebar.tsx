@@ -2,11 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, PlaneTakeoff, Receipt, Settings, UserCog, Users } from "lucide-react";
+import {
+  LayoutDashboard,
+  PlaneTakeoff,
+  Receipt,
+  Settings,
+  TicketCheck,
+  CalendarCheck,
+  UserCog,
+  Users,
+} from "lucide-react";
 import { ComponentType } from "react";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -28,6 +38,8 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/cotacoes", label: "Cotações", icon: Receipt, matchPrefix: "/cotacoes" },
+  { href: "/reservas", label: "Reservas", icon: TicketCheck, matchPrefix: "/reservas" },
+  { href: "/checkin", label: "Check-in", icon: CalendarCheck, matchPrefix: "/checkin" },
   { href: "/clientes", label: "Clientes", icon: Users, matchPrefix: "/clientes" },
   { href: "/equipe", label: "Equipe", icon: UserCog, matchPrefix: "/equipe" },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
@@ -47,16 +59,19 @@ export const AppSidebar = () => {
   return (
     <Sidebar collapsible="icon" className="border-slate-200">
       <SidebarHeader className="border-b border-slate-200 p-2">
-        <div className="flex items-center justify-between gap-2">
-          <Link href="/" className="flex min-w-0 items-center gap-2 overflow-hidden">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-600">
+        <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:justify-center">
+          <Link href="/" className="flex min-w-0 items-center gap-2 overflow-hidden group-data-[collapsible=icon]:hidden">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-600 shadow-xs">
               <PlaneTakeoff className="h-4 w-4 text-white" />
             </div>
-            <span className="truncate text-sm font-bold text-slate-900 group-data-[collapsible=icon]:hidden">
+            <span className="truncate text-sm font-bold text-slate-900">
               Cotation
             </span>
           </Link>
-          <SidebarTrigger className="shrink-0 text-slate-500 hover:bg-slate-100 hover:text-slate-700 group-data-[collapsible=icon]:hidden" />
+          <SidebarTrigger
+            title="Recolher / Expandir menu"
+            className="shrink-0 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition"
+          />
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -88,6 +103,14 @@ export const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="border-t border-slate-200 p-2">
+        <div className="flex items-center group-data-[collapsible=icon]:justify-center">
+          <SidebarTrigger
+            title="Recolher / Expandir menu"
+            className="w-full justify-start gap-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition group-data-[collapsible=icon]:justify-center"
+          />
+        </div>
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

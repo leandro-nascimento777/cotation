@@ -7,10 +7,14 @@ import {
   ClientDraft,
   ClientPassenger,
   defaultAgencySettings,
+  PendingIssuance,
+  PendingIssuanceDraft,
   PricingProfile,
   PricingProfileDraft,
   Quote,
   QuoteDraft,
+  Reservation,
+  ReservationDraft,
   TeamMember,
   TeamMemberDraft,
 } from "./types";
@@ -39,7 +43,143 @@ const STORAGE_KEYS = {
   quotes: "cotation:quotes",
   team: "cotation:team",
   pricingProfiles: "cotation:pricingProfiles",
+  reservations: "cotation:reservations",
+  pendingIssuances: "cotation:pendingIssuances",
 } as const;
+
+export const DEFAULT_INITIAL_RESERVATIONS: Reservation[] = [
+  {
+    id: "res-sakura-001",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    localizador: "ANRXK4",
+    localizadorCia: "NXPLPM",
+    numeroBilhete: "001 4894551527 /28",
+    status: "CONFIRMADA",
+    clienteNome: "HUGO CORDEIRO",
+    clienteEmail: "thays.silva@sakuratur.com.br",
+    clienteTelefone: "11 3389-0000",
+    emissor: "SAKURA CONSOLIDADORA",
+    dataEmissao: "21/09/2026",
+    formaPagamento: "Substituição",
+    bilheteOriginal: "001-4894291037",
+    taxaServico: 0,
+    passageiros: [
+      {
+        id: "pax-1",
+        nome: "HUGO CORDEIRO",
+        tipo: "Criança",
+        bilheteNumero: "001 4894551527 /28",
+        assentos: [
+          { trecho: "GIG-JFK", assento: "23B" },
+          { trecho: "LGA-MCO", assento: "18B" },
+          { trecho: "MIA-GIG", assento: "22A" },
+        ],
+      },
+    ],
+    voos: [
+      {
+        id: "fl-1",
+        trechoTipo: "IDA",
+        ciaAerea: "American Airlines",
+        numeroVoo: "AA 974",
+        origemCodigo: "GIG",
+        origemNome: "Rio de Janeiro (Galeão)",
+        origemTerminal: "Terminal 2",
+        destinoCodigo: "JFK",
+        destinoNome: "Nova Iorque (JFK)",
+        destinoTerminal: "Terminal 8",
+        dataPartida: "02 FEV 2027",
+        horaPartida: "23:00",
+        dataChegada: "03 FEV 2027",
+        horaChegada: "07:10",
+        classe: "Q",
+        escalas: 0,
+        aeronave: "Boeing 787-8",
+        localizadorCia: "NXPLPM",
+        baseTarifaria: "ONN8NHM1C",
+        bagagem: "1 peça despachada (23kg) + mala de mão + mochila",
+        assento: "23B",
+      },
+      {
+        id: "fl-2",
+        trechoTipo: "INTERNO",
+        ciaAerea: "American Airlines",
+        numeroVoo: "AA 3123",
+        origemCodigo: "LGA",
+        origemNome: "Nova Iorque (LaGuardia)",
+        origemTerminal: "Terminal B",
+        destinoCodigo: "MCO",
+        destinoNome: "Orlando (MCO)",
+        destinoTerminal: "Terminal B",
+        dataPartida: "08 FEV 2027",
+        horaPartida: "14:25",
+        dataChegada: "08 FEV 2027",
+        horaChegada: "17:43",
+        classe: "S",
+        escalas: 0,
+        aeronave: "Airbus A321",
+        localizadorCia: "NXPLPM",
+        baseTarifaria: "SLX8MBM1C",
+        bagagem: "1 peça despachada (23kg) + mala de mão + mochila",
+        assento: "18B",
+      },
+      {
+        id: "fl-3",
+        trechoTipo: "VOLTA",
+        ciaAerea: "American Airlines",
+        numeroVoo: "AA 991",
+        origemCodigo: "MIA",
+        origemNome: "Miami (MIA)",
+        destinoCodigo: "GIG",
+        destinoNome: "Rio de Janeiro (Galeão)",
+        destinoTerminal: "Terminal 2",
+        dataPartida: "16 FEV 2027",
+        horaPartida: "19:50",
+        dataChegada: "17 FEV 2027",
+        horaChegada: "06:15",
+        classe: "S",
+        escalas: 0,
+        aeronave: "Boeing 787-8",
+        localizadorCia: "NXPLPM",
+        baseTarifaria: "SLX8MBM1C",
+        bagagem: "1 peça despachada (23kg) + mala de mão + mochila",
+        assento: "22A",
+      },
+    ],
+    valorTarifa: 4086.48,
+    valorTaxas: 523.16,
+    valorTotal: 4609.64,
+    moeda: "BRL",
+    instrucoesEmbarque: "Apresente-se com 3 horas de antecedência para voos internacionais. Levar passaporte original com validade mínima de 6 meses e visto americano válido.",
+  },
+];
+
+export const DEFAULT_PENDING_ISSUANCES: PendingIssuance[] = [
+  {
+    id: "pend-001",
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    orderRef: "RES-8K2N9P",
+    clienteNome: "Camila Rodrigues",
+    clienteEmail: "camila.rodrigues@email.com",
+    clienteTelefone: "11 98877-6655",
+    passageiros: [
+      {
+        id: "pax-c1",
+        nome: "Camila",
+        sobrenome: "Rodrigues",
+        paisResidencia: "Brasil",
+        tipoDocumento: "CPF",
+        numeroDocumento: "345.678.901-22",
+        tipo: "Adulto",
+      },
+    ],
+    trechosDescricao: "São Paulo (GRU) ➔ Lisboa (LIS) — TAP Air Portugal",
+    valorPago: 4890.0,
+    metodoPagamento: "PIX",
+    status: "PENDENTE",
+  },
+];
 
 function readStorage<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -101,6 +241,16 @@ interface AppDataContextValue {
   updateQuote: (id: string, patch: Partial<Quote>) => void;
   deleteQuote: (id: string) => void;
   duplicateQuote: (id: string) => Quote | undefined;
+
+  reservations: Reservation[];
+  getReservation: (id: string) => Reservation | undefined;
+  createReservation: (draft: ReservationDraft) => Reservation;
+  updateReservation: (id: string, patch: Partial<ReservationDraft>) => void;
+  deleteReservation: (id: string) => void;
+
+  pendingIssuances: PendingIssuance[];
+  addPendingIssuance: (draft: PendingIssuanceDraft) => PendingIssuance;
+  markIssuanceAsCompleted: (id: string) => void;
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
@@ -112,6 +262,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [pricingProfiles, setPricingProfiles] = useState<PricingProfile[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [pendingIssuances, setPendingIssuances] = useState<PendingIssuance[]>([]);
 
   // Hidrata do localStorage só no client, depois do primeiro render, pra
   // não dar mismatch de SSR (o servidor sempre renderiza os defaults).
@@ -131,6 +283,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setTeamMembers(readStorage(STORAGE_KEYS.team, []));
     setPricingProfiles(readStorage(STORAGE_KEYS.pricingProfiles, []));
     setQuotes(readStorage(STORAGE_KEYS.quotes, []));
+    const initialRes = readStorage(STORAGE_KEYS.reservations, DEFAULT_INITIAL_RESERVATIONS);
+    setReservations(initialRes && initialRes.length > 0 ? initialRes : DEFAULT_INITIAL_RESERVATIONS);
+    const initialPend = readStorage(STORAGE_KEYS.pendingIssuances, DEFAULT_PENDING_ISSUANCES);
+    setPendingIssuances(initialPend && initialPend.length > 0 ? initialPend : DEFAULT_PENDING_ISSUANCES);
     setHydrated(true);
 
     // Sincronização em background com o PostgreSQL (Neon via Prisma)
@@ -195,6 +351,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (hydrated) writeStorage(STORAGE_KEYS.quotes, quotes);
   }, [quotes, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) writeStorage(STORAGE_KEYS.reservations, reservations);
+  }, [reservations, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) writeStorage(STORAGE_KEYS.pendingIssuances, pendingIssuances);
+  }, [pendingIssuances, hydrated]);
 
   const updateAgency = useCallback((patch: Partial<AgencySettings>) => {
     setAgency((prev) => ({ ...prev, ...patch }));
@@ -385,6 +549,46 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     [quotes, createQuote]
   );
 
+  const getReservation = useCallback((id: string) => reservations.find((r) => r.id === id), [reservations]);
+
+  const createReservation = useCallback((draft: ReservationDraft) => {
+    const now = new Date();
+    const reservation: Reservation = {
+      id: genId(),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+      ...draft,
+    };
+    setReservations((prev) => [reservation, ...prev]);
+    return reservation;
+  }, []);
+
+  const updateReservation = useCallback((id: string, patch: Partial<ReservationDraft>) => {
+    setReservations((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...patch, updatedAt: new Date().toISOString() } : r))
+    );
+  }, []);
+
+  const deleteReservation = useCallback((id: string) => {
+    setReservations((prev) => prev.filter((r) => r.id !== id));
+  }, []);
+
+  const addPendingIssuance = useCallback((draft: PendingIssuanceDraft) => {
+    const issuance: PendingIssuance = {
+      id: genId(),
+      createdAt: new Date().toISOString(),
+      ...draft,
+    };
+    setPendingIssuances((prev) => [issuance, ...prev]);
+    return issuance;
+  }, []);
+
+  const markIssuanceAsCompleted = useCallback((id: string) => {
+    setPendingIssuances((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, status: "EMITIDO" as const } : item))
+    );
+  }, []);
+
   const value = useMemo<AppDataContextValue>(
     () => ({
       hydrated,
@@ -413,6 +617,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       updateQuote,
       deleteQuote,
       duplicateQuote,
+      reservations,
+      getReservation,
+      createReservation,
+      updateReservation,
+      deleteReservation,
+      pendingIssuances,
+      addPendingIssuance,
+      markIssuanceAsCompleted,
     }),
     [
       hydrated,
@@ -441,6 +653,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       updateQuote,
       deleteQuote,
       duplicateQuote,
+      reservations,
+      getReservation,
+      createReservation,
+      updateReservation,
+      deleteReservation,
+      pendingIssuances,
+      addPendingIssuance,
+      markIssuanceAsCompleted,
     ]
   );
 

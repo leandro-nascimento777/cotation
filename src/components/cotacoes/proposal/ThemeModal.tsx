@@ -5,19 +5,12 @@ import { toast } from "sonner";
 import { saveProposalShare, uploadCoverImage } from "@/lib/proposal/actions";
 import { ProposalShareRecord } from "@/lib/proposal/types";
 import { ProposalPdfThemeInput } from "@/lib/pdf/buildProposalPdfData";
-import { DEFAULT_THEME_ID, PROPOSAL_THEMES } from "@/lib/proposal/themes";
+import { DEFAULT_THEME_ID, DEFAULT_NEXT_STEPS, PROPOSAL_THEMES } from "@/lib/proposal/themes";
 import { QuoteExtras } from "@/components/cotacoes/QuoteExtrasForm";
 import { AgencySettings } from "@/lib/store/types";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { QuoteItem } from "@/lib/types";
 import { Check, CloudUpload, Download, Loader2, X } from "lucide-react";
-
-const DEFAULT_NEXT_STEPS = [
-  "Escolha a opção final (com ou sem extras).",
-  "Envie os dados dos passageiros: nome completo, nascimento, documento.",
-  "Confirme a forma de pagamento e efetue o pagamento para garantir a reserva.",
-  "Receba confirmações e vouchers por e-mail/WhatsApp.",
-].join("\n");
 
 const TITLE_MAX = 40;
 const SUBTITLE_MAX = 80;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { useQuoteBoard } from "@/hooks/useQuoteBoard";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -8,6 +9,7 @@ import { LoadingState } from "@/components/shell/LoadingState";
 import { StatTile } from "@/components/dashboard/StatTile";
 import { NewQuoteButton } from "@/components/shell/NewQuoteButton";
 import { QuoteDetailModal } from "@/components/cotacoes/QuoteDetailModal";
+import { IssueReservationModal } from "@/components/reservas/IssueReservationModal";
 import { formatCurrencyBRL, formatWhatsAppLink } from "@/lib/format";
 import {
   QUOTE_PRIORITY_LABEL,
@@ -15,8 +17,9 @@ import {
   QUOTE_STATUS_ORDER,
   QuotePriorityType,
   QuoteStatusType,
+  Quote,
 } from "@/lib/store/types";
-import { CheckCircle2, Clock, Filter, MessageCircle, Receipt, Search, TrendingUp } from "lucide-react";
+import { CheckCircle2, Clock, Filter, MessageCircle, Receipt, Search, TrendingUp, Sparkles } from "lucide-react";
 
 const COLUMN_COLOR: Record<QuoteStatusType, { bar: string; dot: string }> = {
   NOVA: { bar: "border-t-indigo-500", dot: "bg-indigo-500" },
@@ -56,6 +59,8 @@ export default function CotacoesPage() {
     handleDrop,
   } = useQuoteBoard({ quotes, clients, updateQuote, hydrated });
 
+  const [issuingQuote, setIssuingQuote] = useState<Quote | null>(null);
+
   if (!hydrated) {
     return <LoadingState />;
   }
@@ -64,7 +69,7 @@ export default function CotacoesPage() {
     <div>
       <PageHeader title="Cotações" description="Acompanhe o funil de cotações da agência." />
 
-      <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
+      <div className="w-full px-4 py-6 sm:px-6 lg:px-8 space-y-6">
         {quotes.length === 0 ? (
           <EmptyState
             icon={Receipt}
@@ -220,21 +225,23 @@ export default function CotacoesPage() {
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setModalInitialMode("close");
-                                      setSelectedQuoteId(quote.id);
+                                      setIssuingQuote(quote);
                                     }}
-                                    className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold ${
+                                    className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition shadow-sm cursor-pointer ${
                                       quote.saleClosed
-                                        ? "bg-green-50 text-green-700 hover:bg-green-100"
+                                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
                                         : "bg-teal-600 text-white hover:bg-teal-700"
                                     }`}
                                   >
                                     {quote.saleClosed ? (
                                       <>
-                                        <CheckCircle2 className="h-3.5 w-3.5" /> Venda fechada
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                                        Reserva emitida {quote.bookingRef ? `(${quote.bookingRef})` : ""}
                                       </>
                                     ) : (
-                                      "Fechar venda"
+                                      <>
+                                        <Sparkles className="h-3.5 w-3.5" /> Emitir reserva
+                                      </>
                                     )}
                                   </button>
                                 ) : null}
@@ -258,6 +265,19 @@ export default function CotacoesPage() {
           quoteId={selectedQuoteId}
           initialMode={modalInitialMode}
           onClose={() => setSelectedQuoteId(null)}
+        />
+      ) : null}
+
+      {issuingQuote ? (
+        <IssueReservationModal
+          open={Boolean(issuingQuote)}
+          onClose={() => setIssuingQuote(null)}
+          quote={issuingQuote}
+          initialCustomerName={
+            (issuingQuote.clientId ? clientNameById.get(issuingQuote.clientId) : undefined) ||
+            issuingQuote.sellerName
+          }
+          initialDestination={issuingQuote.destino}
         />
       ) : null}
     </div>

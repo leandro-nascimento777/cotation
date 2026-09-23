@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { UploadCard } from "@/components/UploadCard";
 import { FlightList } from "@/components/FlightList";
@@ -23,9 +23,12 @@ import { Send } from "lucide-react";
 
 export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { agency, createQuote, updateQuote, getClient, createClient, updateClient } = useAppData();
 
-  const existingClient = existingQuote?.clientId ? getClient(existingQuote.clientId) : undefined;
+  const queryClientId = searchParams?.get("clientId") || undefined;
+  const targetClientId = existingQuote?.clientId || queryClientId;
+  const existingClient = targetClientId ? getClient(targetClientId) : undefined;
 
   const [quoteId, setQuoteId] = useState<string | null>(existingQuote?.id || null);
   const [numero, setNumero] = useState<string>(existingQuote?.numero || "");
@@ -217,7 +220,7 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   const agencyInfoPreview = buildAgencyInfoForQuote(agency, extras);
 
   return (
-    <div className="mx-auto grid max-w-[1600px] grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[3fr_2fr]">
+    <div className="w-full grid grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:grid-cols-[3fr_2fr]">
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <QuoteTypeSelector value="VOO" />

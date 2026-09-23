@@ -8,6 +8,7 @@ import { calculatePricing } from "@/lib/pricing";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { LoadingState } from "@/components/shell/LoadingState";
 import { FormField as Field, MoneyField, PercentField } from "@/components/ui/FormField";
+import { IdentidadeVisualSection } from "@/components/configuracoes/IdentidadeVisualSection";
 import {
   defaultPricingRules,
   DU_RAV_TIPO_LABEL,
@@ -26,38 +27,12 @@ import {
   Loader2,
   Palette,
   Plus,
-  RotateCcw,
   Save,
   Search,
+  Sparkles,
   Trash2,
   X,
 } from "lucide-react";
-
-interface ColorFieldProps {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}
-
-const ColorField = ({ label, value, onChange }: ColorFieldProps) => (
-  <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-    <span>{label}</span>
-    <div className="flex items-center gap-2">
-      <input
-        type="color"
-        value={value || "#ffffff"}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-9 shrink-0 cursor-pointer rounded border border-slate-300 bg-white p-0.5"
-      />
-      <input
-        value={value}
-        placeholder="padrão do sistema"
-        onChange={(e) => onChange(e.target.value)}
-        className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-teal-500 focus:outline-none"
-      />
-    </div>
-  </label>
-);
 
 interface ToggleGroupProps<T extends string> {
   value: T;
@@ -450,22 +425,61 @@ function FinanceiroTab() {
 
 export default function ConfiguracoesPage() {
   const { agency, updateAgency, resetAgencyPdfColors, hydrated } = useAppData();
-  const [tab, setTab] = useState<"agencia" | "financeiro">("agencia");
+  const [tab, setTab] = useState<"agencia" | "identidade" | "financeiro">("agencia");
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [logoDragOver, setLogoDragOver] = useState(false);
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cnpjError, setCnpjError] = useState<string | null>(null);
   const [cnpjFound, setCnpjFound] = useState(false);
+  const [isExtractingColors, setIsExtractingColors] = useState(false);
 
   const set = <K extends keyof typeof agency>(key: K, value: (typeof agency)[K]) =>
     updateAgency({ [key]: value });
+
+  const extractColorsFromLogo = async (logoBase64: string) => {
+    if (!logoBase64) {
+      toast.error("Adicione uma logo antes de extrair as cores.");
+      return;
+    }
+    setIsExtractingColors(true);
+    try {
+      const res = await fetch("/api/extract-colors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: logoBase64 }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error || "Falha ao extrair cores.");
+      }
+
+      const { corPrimaria, corSecundaria, corTerciaria } = json.data;
+
+      // Atualiza automaticamente as cores do PDF e página
+      updateAgency({
+        pdfCorPrimaria: corPrimaria,
+        pdfCorSecundaria: corSecundaria,
+        pdfCorTexto: corTerciaria,
+      });
+
+      toast.success("Cores da marca extraídas da logo com sucesso! 🎨");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao analisar cores da logo.";
+      toast.error(msg);
+    } finally {
+      setIsExtractingColors(false);
+    }
+  };
 
   const handleLogoFile = (file: File) => {
     if (!file.type.startsWith("image/")) return;
     const reader = new FileReader();
     reader.onload = () => {
-      set("logoDataUrl", reader.result as string);
-      toast.success("Logo atualizada.");
+      const base64 = reader.result as string;
+      set("logoDataUrl", base64);
+      toast.success("Logo carregada.");
+      // Aciona a IA para extrair as cores da logo automaticamente
+      extractColorsFromLogo(base64);
     };
     reader.readAsDataURL(file);
   };
@@ -511,22 +525,31 @@ export default function ConfiguracoesPage() {
         description="Dados da agência, vendedor padrão, numeração de orçamento, identidade visual do PDF e regras financeiras."
       />
 
-      <div className="mx-auto max-w-3xl px-4 pt-6 sm:px-6">
-        <div className="mb-6 inline-flex gap-1 rounded-lg bg-slate-100 p-1">
+      <div className="w-full px-4 pt-6 sm:px-6 lg:px-8">
+        <div className="mb-6 inline-flex gap-1 rounded-xl bg-slate-100 p-1 shadow-xs">
           <button
             type="button"
             onClick={() => setTab("agencia")}
-            className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-semibold transition-colors ${
-              tab === "agencia" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500"
+            className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+              tab === "agencia" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <Building2 className="h-3.5 w-3.5" /> Agência
           </button>
           <button
             type="button"
+            onClick={() => setTab("identidade")}
+            className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+              tab === "identidade" ? "bg-white text-[#5E17EB] shadow-sm" : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <Palette className="h-3.5 w-3.5" /> Identidade Visual & Prévia
+          </button>
+          <button
+            type="button"
             onClick={() => setTab("financeiro")}
-            className={`flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-semibold transition-colors ${
-              tab === "financeiro" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500"
+            className={`flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+              tab === "financeiro" ? "bg-white text-teal-700 shadow-sm" : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <Banknote className="h-3.5 w-3.5" /> Financeiro
@@ -534,7 +557,7 @@ export default function ConfiguracoesPage() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-6 sm:px-6">
+      <div className="w-full flex flex-col gap-6 px-4 pb-12 sm:px-6 lg:px-8">
         {tab === "agencia" ? (
           <>
             {/* Identificação da agência */}
@@ -577,23 +600,50 @@ export default function ConfiguracoesPage() {
                     <span className="px-1 text-center text-[10px] font-semibold text-slate-400">Arraste ou clique</span>
                   )}
                 </div>
-                <div className="flex flex-col gap-1">
-                  <button
-                    type="button"
-                    onClick={() => logoInputRef.current?.click()}
-                    className="flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                  >
-                    <ImagePlus className="h-3.5 w-3.5" /> {agency.logoDataUrl ? "Trocar logo" : "Adicionar logo"}
-                  </button>
-                  {agency.logoDataUrl ? (
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => set("logoDataUrl", "")}
-                      className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-600"
+                      onClick={() => logoInputRef.current?.click()}
+                      className="flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition cursor-pointer"
                     >
-                      <X className="h-3 w-3" /> Remover
+                      <ImagePlus className="h-3.5 w-3.5" /> {agency.logoDataUrl ? "Trocar logo" : "Adicionar logo"}
                     </button>
-                  ) : null}
+
+                    {agency.logoDataUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => extractColorsFromLogo(agency.logoDataUrl)}
+                        disabled={isExtractingColors}
+                        className="flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs font-semibold text-[#5E17EB] hover:bg-purple-100 transition cursor-pointer disabled:opacity-50"
+                        title="Reanalisar a logo e extrair até 3 cores automaticamente com IA"
+                      >
+                        {isExtractingColors ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5" />
+                        )}
+                        Extrair cores com IA
+                      </button>
+                    ) : null}
+
+                    {agency.logoDataUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => set("logoDataUrl", "")}
+                        className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-600 transition cursor-pointer"
+                      >
+                        <X className="h-3 w-3" /> Remover
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {isExtractingColors && (
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200 animate-pulse">
+                      <Sparkles className="h-3.5 w-3.5 text-[#5E17EB]" />
+                      IA analisando a logo e extraindo até 3 cores da marca...
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -673,40 +723,63 @@ export default function ConfiguracoesPage() {
               </p>
             </section>
 
-            {/* Identidade visual do PDF */}
-            <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Palette className="h-4 w-4 text-slate-500" />
-                  <h2 className="text-sm font-semibold text-slate-700">Identidade visual do PDF</h2>
+            {/* Atalho para Identidade Visual e Prévia */}
+            <section className="rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 via-indigo-50/60 to-white p-5 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Palette className="h-5 w-5 text-[#5E17EB]" />
+                    <h2 className="text-sm font-bold text-slate-900">Identidade Visual & Modo de Visualização</h2>
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    Personalize as cores do PDF, da proposta comercial e do voucher de reserva em tempo real.
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[11px] font-semibold text-slate-500">Cores ativas:</span>
+                    <span
+                      className="h-3.5 w-3.5 rounded-full border border-white shadow-xs"
+                      style={{ backgroundColor: agency.pdfCorPrimaria || "#5E17EB" }}
+                      title="Cor Primária"
+                    />
+                    <span
+                      className="h-3.5 w-3.5 rounded-full border border-white shadow-xs"
+                      style={{ backgroundColor: agency.pdfCorSecundaria || "#00875A" }}
+                      title="Cor Secundária"
+                    />
+                    <span
+                      className="h-3.5 w-3.5 rounded-full border border-white shadow-xs"
+                      style={{ backgroundColor: agency.pdfCorTexto || "#1E1B4B" }}
+                      title="Cor do Texto"
+                    />
+                  </div>
                 </div>
+
                 <button
                   type="button"
-                  onClick={() => {
-                    resetAgencyPdfColors();
-                    toast.success("Cores restauradas para o padrão do sistema.");
-                  }}
-                  className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
+                  onClick={() => setTab("identidade")}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#5E17EB] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#4d12c4] transition cursor-pointer shrink-0"
                 >
-                  <RotateCcw className="h-3.5 w-3.5" /> Usar padrão do sistema
+                  <Sparkles className="h-4 w-4" /> Personalizar Cores & Prévia ➔
                 </button>
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <ColorField label="Cor primária (títulos)" value={agency.pdfCorPrimaria} onChange={(v) => set("pdfCorPrimaria", v)} />
-                <ColorField label="Cor secundária (destaque)" value={agency.pdfCorSecundaria} onChange={(v) => set("pdfCorSecundaria", v)} />
-                <ColorField label="Cor do texto" value={agency.pdfCorTexto} onChange={(v) => set("pdfCorTexto", v)} />
-              </div>
-              <label className="mt-3 flex items-center gap-2 text-xs font-medium text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={agency.pdfUsarLogoAgencia}
-                  onChange={(e) => set("pdfUsarLogoAgencia", e.target.checked)}
-                  className="h-4 w-4 accent-teal-600"
-                />
-                Usar a logo da agência no PDF (desmarque para usar o placeholder padrão)
-              </label>
             </section>
           </>
+        ) : tab === "identidade" ? (
+          <IdentidadeVisualSection
+            agencyName={agency.agencyName}
+            logoDataUrl={agency.logoDataUrl}
+            primaryColor={agency.pdfCorPrimaria}
+            secondaryColor={agency.pdfCorSecundaria}
+            textColor={agency.pdfCorTexto}
+            useAgencyLogo={agency.pdfUsarLogoAgencia}
+            onUpdateColors={(colors) => updateAgency(colors)}
+            onResetColors={() => {
+              resetAgencyPdfColors();
+              toast.success("Cores restauradas para o padrão.");
+            }}
+            isExtractingColors={isExtractingColors}
+            onExtractColors={() => extractColorsFromLogo(agency.logoDataUrl)}
+          />
         ) : (
           <FinanceiroTab />
         )}

@@ -7,15 +7,49 @@ import { toast } from "sonner";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { ClientForm, ClientFormErrors } from "@/components/clientes/ClientForm";
 import { ClientPassengersSection } from "@/components/clientes/ClientPassengersSection";
-import { PageHeader } from "@/components/shell/PageHeader";
-import { StatusBadge } from "@/components/shell/StatusBadge";
-import { EmptyState } from "@/components/shell/EmptyState";
+import { ClientProfileHeader } from "@/components/clientes/ClientProfileHeader";
 import { LoadingState } from "@/components/shell/LoadingState";
-import { NewQuoteButton } from "@/components/shell/NewQuoteButton";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { clientSchema } from "@/lib/validation/schemas";
 import { formatCurrencyBRL } from "@/lib/format";
-import { ClientDraft, PAYMENT_METHOD_LABEL } from "@/lib/store/types";
-import { ArrowLeft, Pencil, Receipt, Trash2 } from "lucide-react";
+import { ClientDraft, PAYMENT_METHOD_LABEL, QuoteStatusType } from "@/lib/store/types";
+import { ArrowLeft } from "lucide-react";
+
+function ClientQuoteStatusBadge({ status }: { status: QuoteStatusType }) {
+  switch (status) {
+    case "APROVADA":
+      return (
+        <span className="inline-block rounded-full bg-[#ecfdf5] px-3 py-0.5 text-xs font-semibold text-[#059669]">
+          Aprovada
+        </span>
+      );
+    case "PROPOSTA_ENVIADA":
+      return (
+        <span className="inline-block rounded-full bg-[#eff6ff] px-3 py-0.5 text-xs font-semibold text-[#2563eb]">
+          Proposta Enviada
+        </span>
+      );
+    case "AGUARDANDO_CLIENTE":
+      return (
+        <span className="inline-block rounded-full bg-[#faf5ff] px-3 py-0.5 text-xs font-semibold text-[#9333ea]">
+          Aguardando Cliente
+        </span>
+      );
+    case "EM_ATENDIMENTO":
+      return (
+        <span className="inline-block rounded-full bg-[#f0fdf4] px-3 py-0.5 text-xs font-semibold text-[#16a34a]">
+          Em Atendimento
+        </span>
+      );
+    case "NOVA":
+    default:
+      return (
+        <span className="inline-block rounded-full bg-[#eef2ff] px-3 py-0.5 text-xs font-semibold text-[#4f46e5]">
+          Cotações Criadas
+        </span>
+      );
+  }
+}
 
 export default function ClientDetailPage() {
   const params = useParams<{ id: string }>();
@@ -37,10 +71,10 @@ export default function ClientDetailPage() {
 
   if (!client) {
     return (
-      <div>
-        <PageHeader title="Cliente não encontrado" />
-        <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
-          <Link href="/clientes" className="text-sm font-medium text-teal-700 hover:underline">
+      <div className="min-h-screen bg-[#f8fafc] p-6">
+        <div className="mx-auto max-w-xl text-center space-y-4 pt-12">
+          <h1 className="text-xl font-bold text-slate-800">Cliente não encontrado</h1>
+          <Link href="/clientes" className="text-sm font-semibold text-blue-600 hover:underline">
             ← Voltar para clientes
           </Link>
         </div>
@@ -52,6 +86,8 @@ export default function ClientDetailPage() {
     setEditDraft({
       nomeCompleto: client.nomeCompleto,
       cpf: client.cpf,
+      passaporte: client.passaporte || "",
+      avatarUrl: client.avatarUrl || "",
       email: client.email,
       telefone: client.telefone,
       endereco: client.endereco,
@@ -92,134 +128,112 @@ export default function ClientDetailPage() {
   };
 
   return (
-    <div>
-      <PageHeader
-        title={client.nomeCompleto}
-        description="Perfil do cliente e histórico de cotações."
-        action={
-          <Link href="/clientes" className="flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-700">
-            <ArrowLeft className="h-4 w-4" /> Voltar
-          </Link>
-        }
-      />
+    <div className="min-h-screen bg-[#f8fafc] bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px] py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full space-y-6">
+        {/* Barra superior de navegação com trigger do menu */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <SidebarTrigger
+              title="Recolher / Expandir menu"
+              className="text-slate-500 hover:bg-slate-200/60 hover:text-slate-900 transition shrink-0"
+            />
+            <Link
+              href="/clientes"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" /> Voltar para clientes
+            </Link>
+          </div>
+        </div>
 
-      <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6">
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">Dados cadastrais</h2>
-            <div className="flex gap-2">
+        {/* Card do Cabeçalho com o Design Oficial */}
+        <ClientProfileHeader
+          client={client}
+          onEdit={() => (editing ? setEditing(false) : startEdit())}
+          onDelete={handleDelete}
+          onUpdateAvatar={(avatarUrl) => updateClient(client.id, { avatarUrl })}
+        />
+
+        {/* Formulário de Edição (Apenas se o usuário clicou em editar) */}
+        {editing && editDraft && (
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm space-y-4">
+            <h2 className="text-sm font-bold text-slate-800">Editar dados cadastrais</h2>
+            <ClientForm draft={editDraft} onChange={setEditDraft} errors={errors} />
+            <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => (editing ? setEditing(false) : startEdit())}
-                className="flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                onClick={() => setEditing(false)}
+                className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
-                <Pencil className="h-3.5 w-3.5" /> {editing ? "Cancelar" : "Editar"}
+                Cancelar
               </button>
               <button
                 type="button"
-                onClick={handleDelete}
-                className="flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                onClick={handleSaveEdit}
+                className="rounded-xl bg-[#1d82f5] px-4 py-2 text-xs font-bold text-white hover:bg-blue-600 shadow-xs cursor-pointer transition"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Excluir
+                Salvar alterações
               </button>
             </div>
-          </div>
+          </section>
+        )}
 
-          {editing && editDraft ? (
-            <>
-              <ClientForm draft={editDraft} onChange={setEditDraft} errors={errors} />
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleSaveEdit}
-                  className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
-                >
-                  Salvar alterações
-                </button>
-              </div>
-            </>
-          ) : (
-            <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-xs text-slate-400">E-mail</dt>
-                <dd className="text-slate-700">{client.email || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-slate-400">Telefone / WhatsApp</dt>
-                <dd className="text-slate-700">{client.telefone || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-slate-400">CPF</dt>
-                <dd className="text-slate-700">{client.cpf || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-slate-400">Cidade</dt>
-                <dd className="text-slate-700">{client.cidade || "—"}</dd>
-              </div>
-              <div className="sm:col-span-2">
-                <dt className="text-xs text-slate-400">Endereço</dt>
-                <dd className="text-slate-700">{client.endereco || "—"}</dd>
-              </div>
-              {client.observacoes ? (
-                <div className="sm:col-span-2">
-                  <dt className="text-xs text-slate-400">Observações</dt>
-                  <dd className="whitespace-pre-wrap text-slate-700">{client.observacoes}</dd>
-                </div>
-              ) : null}
-            </dl>
-          )}
-        </section>
+        {/* Seção Passageiros Cadastrados */}
         <ClientPassengersSection
           clientId={client.id}
           passengers={client.passageiros || []}
           onAddPassenger={addClientPassenger}
         />
 
+        {/* Seção Histórico de Cotações com o Design Oficial */}
+        <section className="space-y-3">
+          <h2 className="text-sm sm:text-base font-bold text-slate-800">Histórico de cotações</h2>
 
-        <section>
-          <h2 className="mb-3 text-sm font-semibold text-slate-700">Histórico de cotações</h2>
-          {clientQuotes.length === 0 ? (
-            <EmptyState
-              icon={Receipt}
-              title="Nenhuma cotação ainda"
-              description="Cotações vinculadas a este cliente vão aparecer aqui."
-              action={<NewQuoteButton className="mt-2" />}
-            />
-          ) : (
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-4 py-2.5">Nº / Destino</th>
-                    <th className="hidden px-4 py-2.5 sm:table-cell">Pagamento</th>
-                    <th className="px-4 py-2.5 text-right">Valor</th>
-                    <th className="px-4 py-2.5 text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {clientQuotes.map((quote) => (
-                    <tr key={quote.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-2.5">
-                        <Link href={`/cotacoes/${quote.id}`} className="font-medium text-slate-800 hover:text-teal-700">
-                          {quote.numero}
-                        </Link>
-                        <p className="text-xs text-slate-400">{quote.destino || "—"}</p>
-                      </td>
-                      <td className="hidden px-4 py-2.5 text-slate-500 sm:table-cell">
-                        {quote.paymentMethod ? PAYMENT_METHOD_LABEL[quote.paymentMethod] : "—"}
-                      </td>
-                      <td className="px-4 py-2.5 text-right text-slate-700">
-                        {quote.valorTotal ? formatCurrencyBRL(quote.valorTotal) : "—"}
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <StatusBadge status={quote.status} />
-                      </td>
+          <div className="rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
+            {clientQuotes.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-400 space-y-2">
+                <p>Nenhuma cotação vinculada a este cliente ainda.</p>
+              </div>
+            ) : (
+              <div className="w-full overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[500px]">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-xs font-bold uppercase tracking-wider text-slate-400">
+                      <th className="px-6 py-3.5 font-bold">Nº / DESTINO</th>
+                      <th className="px-6 py-3.5 font-bold">PAGAMENTO</th>
+                      <th className="px-6 py-3.5 font-bold text-right sm:text-left">VALOR</th>
+                      <th className="px-6 py-3.5 font-bold text-right">STATUS</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody className="divide-y divide-slate-100/80 text-sm">
+                    {clientQuotes.map((quote) => (
+                      <tr key={quote.id} className="hover:bg-slate-50/70 transition">
+                        <td className="px-6 py-3.5">
+                          <Link href={`/cotacoes/${quote.id}`} className="group block">
+                            <span className="font-bold text-slate-800 group-hover:text-blue-600 transition block text-sm">
+                              {quote.numero || quote.destino}
+                            </span>
+                            <span className="text-xs text-slate-400 block font-normal">
+                              {quote.numero ? quote.destino || "—" : "Cotação Avulsa"}
+                            </span>
+                          </Link>
+                        </td>
+                        <td className="px-6 py-3.5 text-xs sm:text-sm text-slate-600 font-medium">
+                          {quote.paymentMethod ? PAYMENT_METHOD_LABEL[quote.paymentMethod] : "—"}
+                        </td>
+                        <td className="px-6 py-3.5 text-xs sm:text-sm font-semibold text-slate-700 text-right sm:text-left">
+                          {quote.valorTotal ? formatCurrencyBRL(quote.valorTotal) : "—"}
+                        </td>
+                        <td className="px-6 py-3.5 text-right">
+                          <ClientQuoteStatusBadge status={quote.status} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </div>
