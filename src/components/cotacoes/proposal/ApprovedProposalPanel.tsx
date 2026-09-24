@@ -17,25 +17,19 @@ import {
 import { ProposalShareRecord } from "@/lib/proposal/types";
 import { ProposalClientSnapshot, ProposalPaymentSummary } from "@/lib/proposal/actions";
 import { pricesMatch } from "@/lib/proposal/comparePrices";
+import { PAYMENT_METHOD_KIND_LABEL } from "@/lib/proposal/paymentLabels";
 import { formatCurrencyBRL } from "@/lib/format";
 import { Quote, ClientPassenger } from "@/lib/store/types";
 import { QuoteItem } from "@/lib/types";
 
 const publicOrigin = (): string => (typeof window !== "undefined" ? window.location.origin : "");
 
-const PAYMENT_METHOD_KIND_LABEL: Record<ProposalPaymentSummary["method"], string> = {
-  CARTAO: "Cartão de crédito",
-  PIX: "Pix",
-  NUPAY: "NuPay",
-  AGENCIA: "A combinar com a agência",
-};
-
 const findItemInList = (items: QuoteItem[], sel: { rowId: string; fareId: string } | null): QuoteItem | undefined => {
   if (!sel) return undefined;
   return items.find((i) => i.rowId === sel.rowId && i.fareId === sel.fareId);
 };
 
-const CopyLinkRow = ({ label, url }: { label: string; url: string }) => {
+const CopyLinkRow = ({ label, url, openHref }: { label: string; url: string; openHref: string }) => {
   const [copied, setCopied] = useState(false);
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-2">
@@ -56,9 +50,10 @@ const CopyLinkRow = ({ label, url }: { label: string; url: string }) => {
           {copied ? "Copiado" : "Copiar"}
         </button>
         <a
-          href={url}
+          href={openHref}
           target="_blank"
           rel="noreferrer"
+          title="Abre um resumo somente leitura — sem opção de editar nada"
           className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
         >
           <ExternalLink className="h-3.5 w-3.5" /> Abrir
@@ -158,9 +153,13 @@ export const ApprovedProposalPanel = ({ quote, proposalShare }: ApprovedProposal
           <Globe className="h-3.5 w-3.5" /> Link ativo enviado ao cliente
         </p>
         <div className="flex flex-col gap-2">
-          <CopyLinkRow label="Link permanente" url={permanentUrl} />
+          <CopyLinkRow label="Link permanente" url={permanentUrl} openHref={`${permanentUrl}/resumo`} />
           {activeTemporaryLink ? (
-            <CopyLinkRow label="Link temporário (ainda válido)" url={`${publicOrigin()}/proposta/h/${activeTemporaryLink.token}`} />
+            <CopyLinkRow
+              label="Link temporário (ainda válido)"
+              url={`${publicOrigin()}/proposta/h/${activeTemporaryLink.token}`}
+              openHref={`${publicOrigin()}/proposta/h/${activeTemporaryLink.token}/resumo`}
+            />
           ) : null}
         </div>
       </div>

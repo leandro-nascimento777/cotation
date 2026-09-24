@@ -6,6 +6,23 @@ import { groupByRow } from "@/lib/groupQuoteItems";
 import { Luggage, PlaneLanding, PlaneTakeoff } from "lucide-react";
 import { AirlineLogo } from "@/components/ui/AirlineLogo";
 
+/** Card de um trecho já fechado/escolhido (cia, horários, duração, bagagem
+ * e valor completo) — usado tanto no "Fechar venda" quanto no resumo de
+ * consulta da proposta aprovada. */
+export const ChosenFlightCard = ({ item }: { item: QuoteItem }) => (
+  <div className="flex flex-col gap-1.5 rounded-lg border border-green-200 bg-green-50/60 p-3">
+    {item.ida ? <LegLine leg={item.ida} icon={PlaneTakeoff} /> : null}
+    {item.volta ? <LegLine leg={item.volta} icon={PlaneLanding} /> : null}
+    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+      <span className="flex items-center gap-1 text-slate-600">
+        <Luggage className="h-3.5 w-3.5 text-slate-400" />
+        {item.baggage} <span className="text-slate-400">({item.fareLabel})</span>
+      </span>
+      <span className="font-semibold text-slate-900">{formatCurrencyBRL(item.price)}</span>
+    </div>
+  </div>
+);
+
 interface FlightListProps {
   items: QuoteItem[];
   onToggle?: (rowId: string, fareId: string) => void;

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { StatusBadge } from "@/components/shell/StatusBadge";
-import { FlightList, LegLine } from "@/components/FlightList";
+import { ChosenFlightCard, FlightList } from "@/components/FlightList";
 import { quoteToExtras } from "./QuoteExtrasForm";
 import { CloseSaleForm } from "./CloseSaleForm";
 import { ApprovedProposalPanel } from "./proposal/ApprovedProposalPanel";
@@ -16,7 +16,7 @@ import { ProposalPdfThemeInput } from "@/lib/pdf/buildProposalPdfData";
 import { formatCurrencyBRL, validityDateTimePtBR } from "@/lib/format";
 import { PAYMENT_METHOD_LABEL, QUOTE_PRIORITY_LABEL, Quote } from "@/lib/store/types";
 import { QuoteItem } from "@/lib/types";
-import { CheckCircle2, Luggage, PlaneLanding, PlaneTakeoff, Pencil, X, FileText, Download, Loader2 } from "lucide-react";
+import { CheckCircle2, Pencil, X, FileText, Download, Loader2 } from "lucide-react";
 
 const InfoField = ({ label, value }: { label: string; value: string }) => (
   <div>
@@ -29,20 +29,6 @@ const findItem = (quote: Quote, sel: { rowId: string; fareId: string } | null): 
   if (!sel) return undefined;
   return quote.flightItems.find((i) => i.rowId === sel.rowId && i.fareId === sel.fareId);
 };
-
-const ClosedFlightCard = ({ item }: { item: QuoteItem }) => (
-  <div className="flex flex-col gap-1.5 rounded-lg border border-green-200 bg-green-50/60 p-3">
-    {item.ida ? <LegLine leg={item.ida} icon={PlaneTakeoff} /> : null}
-    {item.volta ? <LegLine leg={item.volta} icon={PlaneLanding} /> : null}
-    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
-      <span className="flex items-center gap-1 text-slate-600">
-        <Luggage className="h-3.5 w-3.5 text-slate-400" />
-        {item.baggage} <span className="text-slate-400">({item.fareLabel})</span>
-      </span>
-      <span className="font-semibold text-slate-900">{formatCurrencyBRL(item.price)}</span>
-    </div>
-  </div>
-);
 
 interface QuoteDetailModalProps {
   quoteId: string;
@@ -283,8 +269,8 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
                     <CheckCircle2 className="h-3.5 w-3.5" /> Voo comprado — localizador {quote.bookingRef || "—"}
                   </p>
                   <div className="flex flex-col gap-2">
-                    {closedIdaItem ? <ClosedFlightCard item={closedIdaItem} /> : null}
-                    {closedVoltaItem && closedVoltaItem !== closedIdaItem ? <ClosedFlightCard item={closedVoltaItem} /> : null}
+                    {closedIdaItem ? <ChosenFlightCard item={closedIdaItem} /> : null}
+                    {closedVoltaItem && closedVoltaItem !== closedIdaItem ? <ChosenFlightCard item={closedVoltaItem} /> : null}
                   </div>
                 </div>
               ) : null}
