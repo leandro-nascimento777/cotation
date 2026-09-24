@@ -12,44 +12,9 @@ import { LoadingState } from "@/components/shell/LoadingState";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { clientSchema } from "@/lib/validation/schemas";
 import { formatCurrencyBRL } from "@/lib/format";
-import { ClientDraft, PAYMENT_METHOD_LABEL, QuoteStatusType } from "@/lib/store/types";
+import { ClientDraft, PAYMENT_METHOD_LABEL } from "@/lib/store/types";
+import { StatusBadge } from "@/components/shell/StatusBadge";
 import { ArrowLeft } from "lucide-react";
-
-function ClientQuoteStatusBadge({ status }: { status: QuoteStatusType }) {
-  switch (status) {
-    case "APROVADA":
-      return (
-        <span className="inline-block rounded-full bg-[#ecfdf5] px-3 py-0.5 text-xs font-semibold text-[#059669]">
-          Aprovada
-        </span>
-      );
-    case "PROPOSTA_ENVIADA":
-      return (
-        <span className="inline-block rounded-full bg-[#eff6ff] px-3 py-0.5 text-xs font-semibold text-[#2563eb]">
-          Proposta Enviada
-        </span>
-      );
-    case "AGUARDANDO_CLIENTE":
-      return (
-        <span className="inline-block rounded-full bg-[#faf5ff] px-3 py-0.5 text-xs font-semibold text-[#9333ea]">
-          Aguardando Cliente
-        </span>
-      );
-    case "EM_ATENDIMENTO":
-      return (
-        <span className="inline-block rounded-full bg-[#f0fdf4] px-3 py-0.5 text-xs font-semibold text-[#16a34a]">
-          Em Atendimento
-        </span>
-      );
-    case "NOVA":
-    default:
-      return (
-        <span className="inline-block rounded-full bg-[#eef2ff] px-3 py-0.5 text-xs font-semibold text-[#4f46e5]">
-          Cotações Criadas
-        </span>
-      );
-  }
-}
 
 export default function ClientDetailPage() {
   const params = useParams<{ id: string }>();
@@ -225,7 +190,7 @@ export default function ClientDetailPage() {
                           {quote.valorTotal ? formatCurrencyBRL(quote.valorTotal) : "—"}
                         </td>
                         <td className="px-6 py-3.5 text-right">
-                          <ClientQuoteStatusBadge status={quote.status} />
+                          <StatusBadge status={quote.status} />
                         </td>
                       </tr>
                     ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { UploadCard } from "@/components/UploadCard";
@@ -20,6 +20,10 @@ import { Quote } from "@/lib/store/types";
 import { FlightRow, flightRowsToQuoteItems, QuoteItem } from "@/lib/types";
 import { parseExtractedDateToISO } from "@/lib/format";
 import { Send } from "lucide-react";
+
+/** Snapshot serializado do que o usuário edita — usado pra saber se há
+ * alterações não salvas quando ele sai da tela. */
+const editorSnapshot = (items: QuoteItem[], extras: QuoteExtras): string => JSON.stringify({ items, extras });
 
 export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   const router = useRouter();
@@ -43,6 +47,11 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [proposalShare, setProposalShare] = useState<ProposalShareRecord | null>(null);
   const [proposalModal, setProposalModal] = useState<"theme" | "share" | "pdf" | null>(null);
+
+  // Ref espelha o quoteId de forma síncrona: o autosave ao desmontar pode
+  // rodar antes do re-render que aplicaria o setQuoteId.
+  const quoteIdRef = useRef<string | null>(existingQuote?.id || null);
+  const savedSnapshotRef = useRef(editorSnapshot(items, extras));
 
   useEffect(() => {
     if (!quoteId) return;
@@ -117,6 +126,8 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
     const clientId = resolveQuoteClientId(extras, { getClient, createClient, updateClient });
     if (clientId !== extras.clientId) setExtras((prev) => ({ ...prev, clientId }));
 
+    savedSnapshotRef.current = editorSnapshot(items, { ...extras, clientId });
+
     const selected = items.filter((i) => i.selected);
     const valorTotal = selected.length ? Math.min(...selected.map((i) => i.price)) : 0;
     const payload = {
@@ -145,15 +156,38 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
       closedVolta: existingQuote?.closedVolta ?? null,
       bookingRef: existingQuote?.bookingRef ?? "",
     };
-    if (quoteId) {
-      updateQuote(quoteId, status ? { ...payload, status } : payload);
-      return { id: quoteId, numero };
+    const currentId = quoteIdRef.current;
+    if (currentId) {
+      updateQuote(currentId, status ? { ...payload, status } : payload);
+      return { id: currentId, numero };
     }
     const created = createQuote(payload);
+    quoteIdRef.current = created.id;
     setQuoteId(created.id);
     setNumero(created.numero);
     return { id: created.id, numero: created.numero };
   };
+
+  // Autosave ao sair da tela (botão Sair, Voltar, sidebar, histórico): se
+  // houver alterações não salvas, grava como rascunho — a cotação aparece
+  // em /cotacoes e pode ser retomada pelo Editar. O ref guarda o persist
+  // do último render, com o estado mais recente.
+  const persistRef = useRef(persist);
+  const itemsRef = useRef(items);
+  const extrasRef = useRef(extras);
+  useEffect(() => {
+    persistRef.current = persist;
+    itemsRef.current = items;
+    extrasRef.current = extras;
+  });
+  useEffect(() => {
+    return () => {
+      if (editorSnapshot(itemsRef.current, extrasRef.current) === savedSnapshotRef.current) return;
+      const isNew = !quoteIdRef.current;
+      persistRef.current();
+      toast.success(isNew ? "Cotação salva como rascunho." : "Alterações da cotação salvas.");
+    };
+  }, []);
 
   /** Gera o PDF no mesmo layout visual da proposta pública (ver aba Link),
    * porém estático — sem seleção nem somatório, só os voos e detalhes. O
@@ -194,17 +228,18 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
 
   const handleSaveDraft = () => {
     persist();
-    toast.success(quoteId ? "Cotação salva." : "Rascunho criado.");
-    if (!quoteId) return; // setQuoteId já disparou o re-render com o id novo
+    toast.success("Cotação salva.");
   };
 
   const handleMarkSent = () => {
-    const { id } = persist("PROPOSTA_ENVIADA");
+    const { id } = persist("ENVIADA");
     toast.success("Cotação marcada como enviada.");
     router.push(`/cotacoes/${id}`);
   };
 
-  const handleCancel = () => {
+  /** Sai para o board; o autosave ao desmontar grava o rascunho se houver
+   * alterações. */
+  const handleExit = () => {
     router.push("/cotacoes");
   };
 
@@ -233,6 +268,13 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
         <QuoteExtrasForm extras={extras} onChange={setExtras} />
 
         <div className="flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={handleExit}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            Sair
+          </button>
           {existingQuote ? (
             <>
               <button
@@ -251,22 +293,13 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
               </button>
             </>
           ) : (
-            <>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleCreate}
-                className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
-              >
-                Criar cotação
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={handleCreate}
+              className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+            >
+              Criar cotação
+            </button>
           )}
         </div>
       </div>

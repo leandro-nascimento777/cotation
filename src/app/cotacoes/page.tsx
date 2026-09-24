@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { useQuoteBoard } from "@/hooks/useQuoteBoard";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -13,19 +14,18 @@ import { IssueReservationModal } from "@/components/reservas/IssueReservationMod
 import { formatCurrencyBRL, formatWhatsAppLink } from "@/lib/format";
 import {
   QUOTE_PRIORITY_LABEL,
-  QUOTE_STATUS_LABEL,
+  QUOTE_STATUS_COLUMN_LABEL,
   QUOTE_STATUS_ORDER,
   QuotePriorityType,
   QuoteStatusType,
   Quote,
 } from "@/lib/store/types";
-import { CheckCircle2, Clock, Filter, MessageCircle, Receipt, Search, TrendingUp, Sparkles } from "lucide-react";
+import { BadgeCheck, CheckCircle2, Clock, Filter, MessageCircle, Receipt, Search, TrendingUp, Sparkles } from "lucide-react";
 
 const COLUMN_COLOR: Record<QuoteStatusType, { bar: string; dot: string }> = {
-  NOVA: { bar: "border-t-indigo-500", dot: "bg-indigo-500" },
-  EM_ATENDIMENTO: { bar: "border-t-amber-500", dot: "bg-amber-500" },
-  PROPOSTA_ENVIADA: { bar: "border-t-blue-500", dot: "bg-blue-500" },
-  AGUARDANDO_CLIENTE: { bar: "border-t-purple-500", dot: "bg-purple-500" },
+  RASCUNHO: { bar: "border-t-slate-400", dot: "bg-slate-400" },
+  ENVIADA: { bar: "border-t-blue-500", dot: "bg-blue-500" },
+  AGUARDANDO: { bar: "border-t-amber-500", dot: "bg-amber-500" },
   APROVADA: { bar: "border-t-green-500", dot: "bg-green-500" },
 };
 
@@ -60,6 +60,14 @@ export default function CotacoesPage() {
   } = useQuoteBoard({ quotes, clients, updateQuote, hydrated });
 
   const [issuingQuote, setIssuingQuote] = useState<Quote | null>(null);
+
+  /** Tira a cotação do board e a leva para /emitidas (com desfazer). */
+  const handleFinalize = (quote: Quote) => {
+    updateQuote(quote.id, { finalizedAt: new Date().toISOString() });
+    toast.success(`Reserva ${quote.bookingRef || quote.numero} finalizada — movida para Emitidas.`, {
+      action: { label: "Desfazer", onClick: () => updateQuote(quote.id, { finalizedAt: null }) },
+    });
+  };
 
   if (!hydrated) {
     return <LoadingState />;
@@ -159,7 +167,7 @@ export default function CotacoesPage() {
                       <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2.5">
                         <span className="flex items-center gap-1.5 text-xs font-bold tracking-wide text-slate-700 uppercase">
                           <span className={`h-1.5 w-1.5 rounded-full ${color.dot}`} />
-                          {QUOTE_STATUS_LABEL[status]}
+                          {QUOTE_STATUS_COLUMN_LABEL[status]}
                         </span>
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
                           {columnQuotes.length}
@@ -243,6 +251,18 @@ export default function CotacoesPage() {
                                         <Sparkles className="h-3.5 w-3.5" /> Emitir reserva
                                       </>
                                     )}
+                                  </button>
+                                ) : null}
+                                {status === "APROVADA" && quote.saleClosed ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleFinalize(quote);
+                                    }}
+                                    className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-800 px-2 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-900 cursor-pointer"
+                                  >
+                                    <BadgeCheck className="h-3.5 w-3.5" /> Finalizar reserva
                                   </button>
                                 ) : null}
                               </div>
