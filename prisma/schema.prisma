@@ -258,6 +258,11 @@ model ProposalShare {
   clientDecision      String?
   decidedAt           DateTime?
 
+  /// Resumo estruturado da forma de pagamento escolhida no checkout público
+  /// (ver ProposalPaymentSummary em src/lib/proposal/actions.ts). Nunca
+  /// contém número de cartão completo nem CVV — só os últimos 4 dígitos.
+  checkoutPayment Json?
+
   temporaryLinks ProposalTemporaryLink[]
 }
 

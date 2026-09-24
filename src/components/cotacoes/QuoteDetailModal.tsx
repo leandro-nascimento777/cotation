@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/shell/StatusBadge";
 import { FlightList, LegLine } from "@/components/FlightList";
 import { quoteToExtras } from "./QuoteExtrasForm";
 import { CloseSaleForm } from "./CloseSaleForm";
+import { ApprovedProposalPanel } from "./proposal/ApprovedProposalPanel";
 import { getProposalShareByQuote } from "@/lib/proposal/actions";
 import { ProposalShareRecord } from "@/lib/proposal/types";
 import { DEFAULT_THEME_ID, DEFAULT_NEXT_STEPS } from "@/lib/proposal/themes";
@@ -270,6 +271,10 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
                     <p className="mt-1 italic text-slate-600">&ldquo;{proposalShare.clientObservation}&rdquo;</p>
                   ) : null}
                 </div>
+              ) : null}
+
+              {quote.status === "APROVADA" && proposalShare ? (
+                <ApprovedProposalPanel quote={quote} proposalShare={proposalShare} />
               ) : null}
 
               {quote.saleClosed && (closedIdaItem || closedVoltaItem) ? (

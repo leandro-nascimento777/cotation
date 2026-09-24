@@ -31,7 +31,14 @@ export const ProposalPage = ({ share }: { share: ProposalShareRow }) => {
   const clientSnap = share.clientSnapshot as unknown as ProposalClientSnapshot | null;
   const primaryColor = agencySnap?.pdfCorPrimaria || "#5E17EB";
   const alreadyDecided = share.clientDecision
-    ? { decision: share.clientDecision, observation: share.clientObservation }
+    ? {
+        decision: share.clientDecision,
+        observation: share.clientObservation,
+        selectedIdaRowId: share.selectedIdaRowId,
+        selectedIdaFareId: share.selectedIdaFareId,
+        selectedVoltaRowId: share.selectedVoltaRowId,
+        selectedVoltaFareId: share.selectedVoltaFareId,
+      }
     : null;
 
   const paymentMethodLabel = share.paymentMethod
