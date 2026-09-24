@@ -86,8 +86,7 @@ function legToTemplate(leg: FlightLeg): TemplateLeg {
 }
 
 /** Converte os itens selecionados pelo agente + os dados da agência no
- * formato de dados que o template Jinja2 (pdf-template/flight-quote.html)
- * espera receber. */
+ * formato de dados que `renderFlightQuoteHtml` espera receber. */
 export function buildFlightQuoteData(
   items: QuoteItem[],
   agency: AgencyInfo,

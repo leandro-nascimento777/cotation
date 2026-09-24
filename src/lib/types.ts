@@ -60,15 +60,6 @@ export const legKind = (row: { ida?: FlightLeg; volta?: FlightLeg }): LegKind =>
   return row.volta ? "volta" : "ida";
 };
 
-/** O trecho "principal" de uma linha/item pra exibições genéricas de uma
- * única perna (ex: linha só de ida, ou só de volta). Combos devem ser
- * tratados explicitamente (mostrando ida e volta), não via este helper. */
-export const primaryLeg = (row: { ida?: FlightLeg; volta?: FlightLeg }): FlightLeg => {
-  const leg = row.ida ?? row.volta;
-  if (!leg) throw new Error("Linha de voo sem nenhum trecho (ida/volta) preenchido.");
-  return leg;
-};
-
 export interface AgencyInfo {
   agencyName: string;
   branch: string;
@@ -82,20 +73,6 @@ export interface AgencyInfo {
   cnpj: string; // CNPJ da agência (auto-preenchível via consulta)
   cadastur: string; // número de registro no Cadastur (Ministério do Turismo)
 }
-
-export const defaultAgencyInfo: AgencyInfo = {
-  agencyName: "Sua Agência de Viagens",
-  branch: "",
-  sellerName: "",
-  email: "",
-  phone: "",
-  message: "Agradecemos a preferência! Seguem as opções de voo selecionadas para sua viagem.",
-  notes: "Valores sujeitos a disponibilidade e alteração sem aviso prévio até a confirmação da reserva.",
-  logoDataUrl: "",
-  validityHours: 24,
-  cnpj: "",
-  cadastur: "",
-};
 
 export const flightRowsToQuoteItems = (rows: FlightRow[]): QuoteItem[] =>
   rows.flatMap((row) =>

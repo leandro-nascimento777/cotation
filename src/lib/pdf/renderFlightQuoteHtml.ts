@@ -3,15 +3,9 @@ import { escapeHtml, nl2br } from "./htmlUtils";
 import { getAirlineLogoUrl } from "../airlineLogo";
 import { FLIGHT_QUOTE_BASE_CSS } from "./flightQuoteCss";
 
-export { escapeHtml };
-
 type TemplateGrupo = FlightQuoteTemplateData["grupos"][number];
 type TemplateOpcao = TemplateGrupo["opcoes"][number];
 type TemplateLeg = NonNullable<TemplateOpcao["ida"]>;
-
-function loadCss(): string {
-  return FLIGHT_QUOTE_BASE_CSS;
-}
 
 function renderHeader(data: FlightQuoteTemplateData): string {
   const logo = data.logo_url
@@ -137,9 +131,6 @@ function renderGrupo(grupo: TemplateGrupo, mostrarTitulo: boolean): string {
     }`;
 }
 
-/** Monta o HTML completo da cotação de voos (equivalente ao
- * pdf-template/flight-quote.html renderizado pelo Jinja2, mas em JS puro —
- * usado pelo Puppeteer no lugar do WeasyPrint). */
 /** Bloco de override de cores (personalização do PDF em Configurações) —
  * injetado DEPOIS do CSS base, então só entra em vigor quando ao menos uma
  * cor for informada. Usa color-mix() (suportado pelo Chromium/Puppeteer)
@@ -171,15 +162,15 @@ function renderColorOverrides(data: FlightQuoteTemplateData): string {
   return `<style>:root { ${rules.join(" ")} }</style>`;
 }
 
+/** Monta o HTML completo da cotação de voos, renderizado em PDF pelo Puppeteer. */
 export async function renderFlightQuoteHtml(data: FlightQuoteTemplateData): Promise<string> {
-  const css = loadCss();
   const totalOpcoes = data.grupos.reduce((sum, g) => sum + g.opcoes.length, 0);
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <title>Orçamento ${escapeHtml(data.numero_orcamento)}</title>
-<style>${css}</style>
+<style>${FLIGHT_QUOTE_BASE_CSS}</style>
 ${renderColorOverrides(data)}
 </head>
 <body>

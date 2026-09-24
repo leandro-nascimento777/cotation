@@ -47,8 +47,6 @@ export const clientSchema = z.object({
   passageiros: z.array(z.any()).optional(),
 });
 
-export type ClientSchemaInput = z.infer<typeof clientSchema>;
-
 /** Schema de validação para Membros da Equipe. */
 export const teamMemberSchema = z.object({
   nome: z
@@ -70,5 +68,3 @@ export const teamMemberSchema = z.object({
   telefone: z.string().trim().max(30, "Telefone muito longo.").optional().default(""),
   ativo: z.boolean().default(true),
 });
-
-export type TeamMemberSchemaInput = z.infer<typeof teamMemberSchema>;

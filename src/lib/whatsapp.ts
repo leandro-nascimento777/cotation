@@ -1,8 +1,6 @@
 import { AgencyInfo, QuoteItem } from "./types";
-import { formatCurrencyBRL, formatWhatsAppLink, validityDateTimePtBR } from "./format";
+import { formatCurrencyBRL, validityDateTimePtBR } from "./format";
 import { groupQuoteItems } from "./groupQuoteItems";
-
-export { formatWhatsAppLink };
 
 /** Gera o texto formatado (Markdown do WhatsApp: *negrito*, _itálico_) a
  * partir dos itens selecionados e dos dados da agência. Quando há mais de

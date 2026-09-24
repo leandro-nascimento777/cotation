@@ -153,40 +153,6 @@ p {
   gap: 6px;
 }
 
-.tabela {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 10px;
-}
-
-.tabela th,
-.tabela td {
-  border: 1px solid var(--cor-borda);
-  padding: 5px 7px;
-  text-align: left;
-  vertical-align: top;
-}
-
-.tabela th {
-  background: var(--cor-primaria-clara);
-  font-weight: bold;
-  color: var(--cor-texto);
-}
-
-.tabela td.num,
-.tabela th.num {
-  text-align: right;
-}
-
-.tabela .small {
-  font-size: 9px;
-  color: var(--cor-texto-suave);
-}
-
-.tabela tr.subtotal td {
-  font-weight: bold;
-}
-
 .secao-final .texto-livre {
   font-size: 9.5px;
   color: var(--cor-texto-suave);
