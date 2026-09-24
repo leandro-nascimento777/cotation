@@ -4,12 +4,6 @@ import { prisma } from "@/lib/db/prisma";
 import { clientSchema } from "@/lib/validation/schemas";
 import { logger } from "@/lib/logger";
 
-export interface ActionResult<T> {
-  ok: boolean;
-  data?: T;
-  error?: string;
-}
-
 /** Obtém o ID da agência padrão (single-tenant ou agência ativa). Cria se não existir. */
 export async function getOrCreateDefaultAgencyId(): Promise<string> {
   const existing = await prisma.agency.findFirst({ select: { id: true } });
@@ -37,20 +31,6 @@ export async function listClientsAction() {
   } catch (err) {
     logger.error("Falha ao listar clientes no banco", err);
     return { ok: false, error: "Não foi possível carregar a lista de clientes." };
-  }
-}
-
-export async function getClientAction(id: string) {
-  try {
-    const client = await prisma.client.findUnique({
-      where: { id },
-      include: { quotes: { orderBy: { createdAt: "desc" } } },
-    });
-    if (!client) return { ok: false, error: "Cliente não encontrado." };
-    return { ok: true, data: client };
-  } catch (err) {
-    logger.error("Falha ao obter cliente", err, { id });
-    return { ok: false, error: "Erro ao buscar dados do cliente." };
   }
 }
 

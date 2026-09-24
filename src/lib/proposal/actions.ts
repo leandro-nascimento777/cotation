@@ -284,22 +284,6 @@ export async function saveProposalPassengerAction(shareId: string, passenger: Cl
       },
     });
 
-    // Se tiver clientId registrado, tenta persistir também no Client
-    if (clientSnapshot.clientId) {
-      try {
-        const client = await prisma.client.findUnique({ where: { id: clientSnapshot.clientId } });
-        if (client) {
-          // Atualiza observações ou campo de metadados se necessário
-          logger.info("Passageiro salvo na ficha do cliente no banco", {
-            clientId: clientSnapshot.clientId,
-            passengerName: `${passenger.nome} ${passenger.sobrenome}`,
-          });
-        }
-      } catch (err) {
-        logger.warn("Falha secundária ao salvar passageiro na entidade cliente", { err });
-      }
-    }
-
     return { ok: true, savedPassengers: updatedList };
   } catch (err) {
     logger.error("Falha ao salvar passageiro na proposta", err);

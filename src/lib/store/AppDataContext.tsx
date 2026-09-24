@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   AgencySettings,
   Client,
@@ -32,6 +32,7 @@ import {
 } from "@/lib/actions/team";
 import { createQuoteAction, deleteQuoteAction } from "@/lib/actions/quotes";
 import { logger } from "@/lib/logger";
+import { normalizeQuoteStatus } from "./quoteStatus";
 
 // "Banco local": Context + localStorage. Mesma forma de uma API real
 // (list/get/create/update/remove), pra trocar por fetch() depois ser
@@ -258,6 +259,13 @@ const AppDataContext = createContext<AppDataContextValue | null>(null);
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [agency, setAgency] = useState<AgencySettings>(defaultAgencySettings);
+  // Espelho síncrono da agência: createQuote precisa do próximo número na
+  // hora (não dá pra ler de dentro do updater do setAgency, que o React
+  // pode executar só no próximo render).
+  const agencyRef = useRef(agency);
+  useEffect(() => {
+    agencyRef.current = agency;
+  }, [agency]);
   const [clients, setClients] = useState<Client[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [pricingProfiles, setPricingProfiles] = useState<PricingProfile[]>([]);
@@ -282,7 +290,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     setClients(readStorage(STORAGE_KEYS.clients, []));
     setTeamMembers(readStorage(STORAGE_KEYS.team, []));
     setPricingProfiles(readStorage(STORAGE_KEYS.pricingProfiles, []));
-    setQuotes(readStorage(STORAGE_KEYS.quotes, []));
+    setQuotes(
+      readStorage<Quote[]>(STORAGE_KEYS.quotes, []).map((q) => ({ ...q, status: normalizeQuoteStatus(q.status) }))
+    );
     const initialRes = readStorage(STORAGE_KEYS.reservations, DEFAULT_INITIAL_RESERVATIONS);
     setReservations(initialRes && initialRes.length > 0 ? initialRes : DEFAULT_INITIAL_RESERVATIONS);
     const initialPend = readStorage(STORAGE_KEYS.pendingIssuances, DEFAULT_PENDING_ISSUANCES);
@@ -464,18 +474,20 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const createQuote = useCallback(
     (draft: QuoteDraft) => {
       const now = new Date();
-      let numero = "";
-      setAgency((prevAgency) => {
-        const seq = String(prevAgency.proximoOrcamentoNumero).padStart(6, "0");
-        numero = `${prevAgency.orcamentoPrefixo}-${now.getFullYear()}-${seq}`;
-        return { ...prevAgency, proximoOrcamentoNumero: prevAgency.proximoOrcamentoNumero + 1 };
-      });
+      const current = agencyRef.current;
+      const seqNum = current.proximoOrcamentoNumero;
+      const numero = `${current.orcamentoPrefixo}-${now.getFullYear()}-${String(seqNum).padStart(6, "0")}`;
+      agencyRef.current = { ...current, proximoOrcamentoNumero: seqNum + 1 };
+      setAgency((prevAgency) => ({
+        ...prevAgency,
+        proximoOrcamentoNumero: Math.max(prevAgency.proximoOrcamentoNumero, seqNum + 1),
+      }));
       const quote: Quote = {
         id: genId(),
         createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
         numero,
-        status: draft.status || "NOVA",
+        status: draft.status || "RASCUNHO",
         ...draft,
       };
       setQuotes((prev) => [quote, ...prev]);
@@ -538,7 +550,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         observacoes: original.observacoes,
         valorTotal: original.valorTotal,
         flightItems: original.flightItems,
-        status: "NOVA",
+        status: "RASCUNHO",
         pricingProfileId: original.pricingProfileId,
         saleClosed: false,
         closedIda: null,

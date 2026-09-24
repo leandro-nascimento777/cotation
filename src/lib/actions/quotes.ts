@@ -22,25 +22,6 @@ export interface CreateQuoteActionInput {
   flightItems: QuoteItem[];
 }
 
-export async function listQuotesAction() {
-  try {
-    const agencyId = await getOrCreateDefaultAgencyId();
-    const quotes = await prisma.quote.findMany({
-      where: { agencyId },
-      include: {
-        flightOptions: true,
-        client: { select: { id: true, nomeCompleto: true, telefone: true, email: true } },
-        responsavel: { select: { id: true, nome: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    return { ok: true, data: quotes };
-  } catch (err) {
-    logger.error("Falha ao listar cotações no banco", err);
-    return { ok: false, error: "Não foi possível carregar as cotações." };
-  }
-}
-
 export async function createQuoteAction(input: CreateQuoteActionInput) {
   try {
     const agencyId = await getOrCreateDefaultAgencyId();

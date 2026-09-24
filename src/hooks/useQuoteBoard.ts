@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getProposalDecisions } from "@/lib/proposal/actions";
+import { statusFromClientDecision } from "@/lib/store/quoteStatus";
 import {
   QUOTE_STATUS_ORDER,
   Quote,
@@ -40,16 +41,21 @@ export const useQuoteBoard = ({
     [clients]
   );
 
-  // Sincroniza aprovações que o cliente deu na proposta pública
+  // Sincroniza as respostas que o cliente deu na proposta pública
   useEffect(() => {
     if (!hydrated || quotes.length === 0) return;
     getProposalDecisions(quotes.map((q) => q.id)).then((decisions) => {
       for (const decision of decisions) {
-        if (decision.clientDecision !== "APROVADO") continue;
         const quote = quotes.find((q) => q.id === decision.quoteLocalId);
-        if (!quote || quote.status === "APROVADA") continue;
+        if (!quote) continue;
+        const nextStatus = statusFromClientDecision(quote.status, decision.clientDecision);
+        if (!nextStatus) continue;
 
-        const patch: Partial<Quote> = { status: "APROVADA" };
+        const patch: Partial<Quote> = { status: nextStatus };
+        if (nextStatus !== "APROVADA") {
+          updateQuote(quote.id, patch);
+          continue;
+        }
         const canPrefill = !quote.saleClosed && !quote.closedIda && !quote.closedVolta;
         if (canPrefill && decision.selectedIdaRowId && decision.selectedIdaFareId) {
           patch.closedIda = { rowId: decision.selectedIdaRowId, fareId: decision.selectedIdaFareId };
@@ -66,6 +72,7 @@ export const useQuoteBoard = ({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return quotes
+      .filter((quote) => !quote.finalizedAt)
       .filter((quote) => !priorityFilter || quote.priority === priorityFilter)
       .filter((quote) => {
         if (!q) return true;
@@ -87,7 +94,7 @@ export const useQuoteBoard = ({
   const stats = useMemo(
     () => ({
       total: quotes.length,
-      aguardandoResposta: quotes.filter((q) => q.status === "AGUARDANDO_CLIENTE").length,
+      aguardandoResposta: quotes.filter((q) => q.status === "ENVIADA" || q.status === "AGUARDANDO").length,
       valorTotal: quotes.reduce((sum, q) => sum + (q.valorTotal || 0), 0),
     }),
     [quotes]

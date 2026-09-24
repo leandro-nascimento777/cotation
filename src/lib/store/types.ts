@@ -7,29 +7,31 @@ import { QuoteItem } from "@/lib/types";
 
 export type QuoteType = "VOO" | "HOTEL" | "PACOTE";
 
-export type QuoteStatusType =
-  | "NOVA"
-  | "EM_ATENDIMENTO"
-  | "PROPOSTA_ENVIADA"
-  | "AGUARDANDO_CLIENTE"
-  | "APROVADA";
+/** Etapas do funil de cotações:
+ * - RASCUNHO: sem terminar ou ainda não enviada ao cliente;
+ * - ENVIADA: criada e já enviada ao cliente;
+ * - AGUARDANDO: cliente ainda não aprovou (ex: pediu revisão);
+ * - APROVADA: cliente aprovou. */
+export type QuoteStatusType = "RASCUNHO" | "ENVIADA" | "AGUARDANDO" | "APROVADA";
 
+/** Rótulo de uma cotação (badge). */
 export const QUOTE_STATUS_LABEL: Record<QuoteStatusType, string> = {
-  NOVA: "Cotações Criadas",
-  EM_ATENDIMENTO: "Em Atendimento",
-  PROPOSTA_ENVIADA: "Proposta Enviada",
-  AGUARDANDO_CLIENTE: "Aguardando Cliente",
+  RASCUNHO: "Rascunho",
+  ENVIADA: "Enviada",
+  AGUARDANDO: "Aguardando",
   APROVADA: "Aprovada",
 };
 
+/** Rótulo da coluna no board de cotações. */
+export const QUOTE_STATUS_COLUMN_LABEL: Record<QuoteStatusType, string> = {
+  RASCUNHO: "Rascunhos",
+  ENVIADA: "Enviadas",
+  AGUARDANDO: "Aguardando",
+  APROVADA: "Aprovadas",
+};
+
 /** Ordem das colunas no board de cotações (ver /cotacoes). */
-export const QUOTE_STATUS_ORDER: QuoteStatusType[] = [
-  "NOVA",
-  "EM_ATENDIMENTO",
-  "PROPOSTA_ENVIADA",
-  "AGUARDANDO_CLIENTE",
-  "APROVADA",
-];
+export const QUOTE_STATUS_ORDER: QuoteStatusType[] = ["RASCUNHO", "ENVIADA", "AGUARDANDO", "APROVADA"];
 
 export type QuotePriorityType = "BAIXA" | "NORMAL" | "ALTA";
 
@@ -225,6 +227,9 @@ export interface Quote {
   closedIda: ClosedFlightSelection | null;
   closedVolta: ClosedFlightSelection | null;
   bookingRef: string; // localizador da reserva
+  /** Quando a reserva emitida foi finalizada: a cotação sai do board e
+   * passa a aparecer em /emitidas. */
+  finalizedAt?: string | null;
 }
 
 export type QuoteDraft = Omit<Quote, "id" | "createdAt" | "updatedAt" | "numero" | "status"> & {

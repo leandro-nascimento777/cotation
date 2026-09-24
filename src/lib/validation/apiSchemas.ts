@@ -13,7 +13,7 @@ export const extractRequestSchema = z.object({
 });
 
 /** Schema de validação para trecho de voo (FlightLeg). */
-export const flightLegSchema = z.object({
+const flightLegSchema = z.object({
   airline: z.string().default(""),
   flightNumber: z.string().default(""),
   date: z.string().default(""),
@@ -27,7 +27,7 @@ export const flightLegSchema = z.object({
 });
 
 /** Schema de validação para item selecionável de cotação (QuoteItem). */
-export const quoteItemSchema = z.object({
+const quoteItemSchema = z.object({
   rowId: z.string(),
   fareId: z.string(),
   ida: flightLegSchema.optional(),
@@ -41,7 +41,7 @@ export const quoteItemSchema = z.object({
 });
 
 /** Schema de dados da agência para geração de PDF de cotação. */
-export const agencyInfoSchema = z.object({
+const agencyInfoSchema = z.object({
   agencyName: z.string().min(1, "Nome da agência é obrigatório."),
   branch: z.string().default(""),
   sellerName: z.string().default(""),

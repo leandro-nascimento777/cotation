@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BadgeCheck,
   LayoutDashboard,
   PlaneTakeoff,
   Receipt,
@@ -38,6 +39,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/cotacoes", label: "Cotações", icon: Receipt, matchPrefix: "/cotacoes" },
+  { href: "/emitidas", label: "Emitidas", icon: BadgeCheck, matchPrefix: "/emitidas" },
   { href: "/reservas", label: "Reservas", icon: TicketCheck, matchPrefix: "/reservas" },
   { href: "/checkin", label: "Check-in", icon: CalendarCheck, matchPrefix: "/checkin" },
   { href: "/clientes", label: "Clientes", icon: Users, matchPrefix: "/clientes" },

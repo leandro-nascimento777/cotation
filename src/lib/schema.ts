@@ -15,7 +15,7 @@ import { z } from "zod";
 //    card, com uma combinação selecionada e um preço TOTAL combinado) —
 //    cada card vira um "row" com "ida" E "volta" preenchidos.
 
-export const flightLegSchema = z.object({
+const flightLegSchema = z.object({
   airline: z.string().describe('Companhia aérea, ex: "GOL", "Azul", "LATAM"'),
   flightNumber: z.string().describe('Número do voo, ou "" se não estiver visível'),
   date: z.string().describe('Data do voo como exibida, ex: "18 Set" ou "25/09/26"'),
@@ -28,7 +28,7 @@ export const flightLegSchema = z.object({
   aircraft: z.string().describe('Equipamento/aeronave, ou "" se não estiver visível'),
 });
 
-export const fareOptionSchema = z.object({
+const fareOptionSchema = z.object({
   baggage: z
     .string()
     .describe(
@@ -48,7 +48,7 @@ export const fareOptionSchema = z.object({
   currency: z.string().default("BRL"),
 });
 
-export const flightRowSchema = z
+const flightRowSchema = z
   .object({
     ida: flightLegSchema
       .optional()
@@ -70,7 +70,7 @@ export const flightRowSchema = z
     message: "Cada linha precisa ter pelo menos um trecho (ida ou volta) preenchido.",
   });
 
-export const passengersSchema = z.object({
+const passengersSchema = z.object({
   adults: z.number().int().describe('Número de adultos, se aparecer em algum resumo/filtro de busca visível na tela (ex: "1 Adulto"). Use 1 se não conseguir identificar.'),
   children: z.number().int().describe("Número de crianças, se visível. Use 0 se não conseguir identificar."),
   infants: z.number().int().describe("Número de bebês/colo, se visível. Use 0 se não conseguir identificar."),
@@ -84,5 +84,3 @@ export const extractionResultSchema = z.object({
       'Contagem de passageiros, SÓ quando aparecer explicitamente em algum resumo/filtro de busca na tela (ex: "1 Adulto", "2 Adultos, 1 Criança"). Deixe ausente se essa informação não estiver visível na imagem — não invente.'
     ),
 });
-
-export type ExtractionResult = z.infer<typeof extractionResultSchema>;

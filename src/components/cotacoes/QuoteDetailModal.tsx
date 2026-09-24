@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { StatusBadge } from "@/components/shell/StatusBadge";
 import { FlightList, LegLine } from "@/components/FlightList";
-import { QuoteExtrasForm, QuoteExtras, quoteToExtras } from "./QuoteExtrasForm";
+import { quoteToExtras } from "./QuoteExtrasForm";
 import { CloseSaleForm } from "./CloseSaleForm";
-import { resolveQuoteClientId } from "@/lib/store/resolveQuoteClient";
 import { getProposalShareByQuote } from "@/lib/proposal/actions";
 import { ProposalShareRecord } from "@/lib/proposal/types";
 import { DEFAULT_THEME_ID, DEFAULT_NEXT_STEPS } from "@/lib/proposal/themes";
@@ -49,18 +49,17 @@ interface QuoteDetailModalProps {
   initialMode?: "view" | "close";
 }
 
-/** Modal de detalhes/edição de uma cotação, aberto a partir do card no
- * board (/cotacoes). Igual ao QuoteEditor em conteúdo, mas sem o campo de
- * upload/extração de print — aqui só se edita os dados já existentes. Na
- * coluna Aprovada também é usado pro fluxo de "Fechar venda". */
+/** Modal de detalhes de uma cotação, aberto a partir do card no board
+ * (/cotacoes). O Editar leva ao editor completo (/cotacoes/[id]), o mesmo
+ * fluxo da Nova cotação. Na coluna Aprovada também é usado pro fluxo de
+ * "Fechar venda". */
 export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: QuoteDetailModalProps) {
-  const { agency, getQuote, getClient, createClient, updateClient, updateQuote } = useAppData();
+  const router = useRouter();
+  const { agency, getQuote, getClient, updateQuote } = useAppData();
   const quote = getQuote(quoteId);
   const client = quote?.clientId ? getClient(quote.clientId) : undefined;
 
-  const [mode, setMode] = useState<"view" | "edit" | "close">(initialMode);
-  const [extras, setExtras] = useState<QuoteExtras | null>(quote ? quoteToExtras(quote, client, agency) : null);
-  const [items, setItems] = useState<QuoteItem[]>(quote?.flightItems || []);
+  const [mode, setMode] = useState<"view" | "close">(initialMode);
   const [proposalShare, setProposalShare] = useState<ProposalShareRecord | null>(null);
   const [pdfGenerating, setPdfGenerating] = useState(false);
 
@@ -76,59 +75,15 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
     getProposalShareByQuote(quoteId).then(setProposalShare);
   }, [quoteId]);
 
-  if (!quote || !extras) return null;
+  if (!quote) return null;
 
   const selectedItems = quote.flightItems.filter((i) => i.selected);
   const closedIdaItem = findItem(quote, quote.closedIda);
   const closedVoltaItem = findItem(quote, quote.closedVolta);
 
-  const handleToggle = (rowId: string, fareId: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.rowId === rowId && item.fareId === fareId ? { ...item, selected: !item.selected } : item
-      )
-    );
-  };
-
   const handleEdit = () => {
-    setExtras(quoteToExtras(quote, client));
-    setItems(quote.flightItems);
-    setMode("edit");
-  };
-
-  const handleCancel = () => {
-    setExtras(quoteToExtras(quote, client));
-    setItems(quote.flightItems);
-    setMode("view");
-  };
-
-  const handleSave = () => {
-    const clientId = resolveQuoteClientId(extras, { getClient, createClient, updateClient });
-    const selected = items.filter((i) => i.selected);
-    const valorTotal = selected.length ? Math.min(...selected.map((i) => i.price)) : 0;
-    updateQuote(quote.id, {
-      clientId,
-      responsavelId: extras.responsavelId,
-      sellerName: extras.sellerName,
-      sellerEmail: extras.sellerEmail,
-      sellerPhone: extras.sellerPhone,
-      destino: extras.destino,
-      periodoInicio: extras.periodoInicio,
-      periodoFim: extras.periodoFim,
-      paymentMethod: extras.paymentMethod,
-      validityHours: extras.validityHours,
-      priority: extras.priority,
-      pricingProfileId: extras.pricingProfileId,
-      adults: extras.adults,
-      children: extras.children,
-      infants: extras.infants,
-      mensagemDestaque: extras.mensagemDestaque,
-      observacoes: extras.observacoes,
-      valorTotal,
-      flightItems: items,
-    });
-    toast.success("Cotação atualizada.");
-    setMode("view");
+    onClose();
+    router.push(`/cotacoes/${quote.id}`);
   };
 
   const handleConfirmClose = (data: { closedIda: Quote["closedIda"]; closedVolta: Quote["closedVolta"]; bookingRef: string }) => {
@@ -150,7 +105,7 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
         ? flightItems
         : flightItems.map((i) => ({ ...i, selected: true }));
 
-      const extrasData = extras || quoteToExtras(quote, client, agency);
+      const extrasData = quoteToExtras(quote, client, agency);
 
       const theme: ProposalPdfThemeInput = {
         themeId: proposalShare?.themeId || DEFAULT_THEME_ID,
@@ -295,12 +250,7 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
-          {mode === "edit" ? (
-            <div className="flex flex-col gap-4">
-              <QuoteExtrasForm extras={extras} onChange={setExtras} />
-              {items.length > 0 && <FlightList items={items} onToggle={handleToggle} />}
-            </div>
-          ) : mode === "close" ? (
+          {mode === "close" ? (
             <CloseSaleForm
               quote={quote}
               lockedByClient={proposalShare?.clientDecision === "APROVADO"}
@@ -404,24 +354,6 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
           )}
         </div>
 
-        {mode === "edit" ? (
-          <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
-            >
-              Salvar alterações
-            </button>
-          </div>
-        ) : null}
       </div>
     </div>
   );
