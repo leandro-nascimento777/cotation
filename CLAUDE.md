@@ -8,22 +8,22 @@ Este arquivo define os comandos, arquitetura, convenções e regras de código p
 
 ```bash
 # Servidor de desenvolvimento
-npm run dev
+bun run dev
 
 # Execução de testes unitários (Vitest)
-npm test
+bun run test  # não usar `bun test` (é o runner do Bun, não o Vitest)
 
 # Verificação estática de tipos (TypeScript)
-npx tsc --noEmit
+bunx tsc --noEmit
 
 # Verificação de linter e formatação (ESLint)
-npm run lint
+bun run lint
 
 # Compilação de build de produção (Next.js Turbopack)
-npm run build
+bun run build
 
 # Sincronização do schema Prisma com o banco PostgreSQL (Neon)
-npx dotenv -e .env.local -- npx prisma db push
+bunx dotenv -e .env.local -- bunx prisma db push
 ```
 
 ---
@@ -78,7 +78,7 @@ npx dotenv -e .env.local -- npx prisma db push
   ```
 
 ### 7. Testes Automatizados
-- Toda nova regra financeira, conversão de datas, manipulação de strings ou algoritmo de agrupamento deve ser acompanhada de testes unitários no diretório `tests/` executados com `npm test`.
+- Toda nova regra financeira, conversão de datas, manipulação de strings ou algoritmo de agrupamento deve ser acompanhada de testes unitários no diretório `tests/` executados com `bun run test`.
 
 ---
 

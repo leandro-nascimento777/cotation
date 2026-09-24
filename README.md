@@ -23,12 +23,12 @@ Uma plataforma completa de engenharia moderna para agências de viagens: do uplo
 ## Como Instalar e Rodar Localmente
 
 ### 1. Pré-requisitos
-- Node.js 20+ (recomendado Node 22 ou 24)
-- npm 10+
+- Node.js 24 (runtime do Next.js)
+- Bun 1.3+ (gerenciador de pacotes)
 
 ### 2. Instalação de Dependências
 ```bash
-npm install
+bun install
 ```
 
 ### 3. Configuração de Variáveis de Ambiente
@@ -44,12 +44,12 @@ Preencha as variáveis necessárias no `.env.local`:
 
 ### 4. Scripts Principais
 
-- **Desenvolvimento:** `npm run dev` (abre em http://localhost:3000)
-- **Testes Automatizados:** `npm test`
-- **Checagem de Tipos:** `npx tsc --noEmit`
-- **Linter:** `npm run lint`
-- **Build de Produção:** `npm run build`
-- **Sincronizar Banco de Dados:** `npx dotenv -e .env.local -- npx prisma db push`
+- **Desenvolvimento:** `bun run dev` (abre em http://localhost:3000)
+- **Testes Automatizados:** `bun run test`
+- **Checagem de Tipos:** `bunx tsc --noEmit`
+- **Linter:** `bun run lint`
+- **Build de Produção:** `bun run build`
+- **Sincronizar Banco de Dados:** `bunx dotenv -e .env.local -- bunx prisma db push`
 
 ---
 
@@ -187,7 +187,7 @@ aparecem no cabeçalho do PDF quando informados.
 O projeto possui suíte completa de testes unitários para as regras mais sensíveis de negócio:
 
 ```bash
-npm test
+bun run test
 ```
 
 - `tests/pricing.test.ts`: Cálculos de DU/RAV percentual/fixo, piso mínimo, fee por passageiro/bilhete, markup, repasse condicional de gateway e retenção de imposto calculada exclusivamente sobre o lucro da agência.
@@ -198,12 +198,12 @@ npm test
 ## CI/CD Automatizado
 
 Pipeline configurado no GitHub Actions (`.github/workflows/ci.yml`) que valida a cada `push` ou `pull_request`:
-1. `npm ci --legacy-peer-deps`
-2. `npx prisma generate`
-3. `npm run lint`
-4. `npx tsc --noEmit`
-5. `npm test`
-6. `npm run build`
+1. `bun install --frozen-lockfile`
+2. `bunx prisma generate`
+3. `bun run lint`
+4. `bunx tsc --noEmit`
+5. `bun run test`
+6. `bun run build`
 
 ## Deploy na Vercel
 
