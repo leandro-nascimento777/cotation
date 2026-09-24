@@ -14,7 +14,14 @@ import { TravelerCheckoutView } from "./checkout/TravelerCheckoutView";
 interface ProposalResponseFormProps {
   shareId: string;
   flightItems: QuoteItem[];
-  alreadyDecided: { decision: string; observation: string | null } | null;
+  alreadyDecided: {
+    decision: string;
+    observation: string | null;
+    selectedIdaRowId?: string | null;
+    selectedIdaFareId?: string | null;
+    selectedVoltaRowId?: string | null;
+    selectedVoltaFareId?: string | null;
+  } | null;
   nextSteps: string | null;
   paymentMethodLabel: string;
   agencyObservations: string;
@@ -72,6 +79,11 @@ export const ProposalResponseForm = ({
   const [done, setDone] = useState<"APROVADO" | "REVISAO" | null>(
     alreadyDecided ? (alreadyDecided.decision as "APROVADO" | "REVISAO") : null
   );
+
+  // Uma vez decidida (já vinha decidida ao carregar, ou acabou de ser
+  // enviada nesta sessão), o seletor de voos vira só consulta — ninguém
+  // reabre esse link e muda o que o cliente escolheu.
+  const locked = Boolean(done);
 
   const selectedIdaItem = flightItems.find(
     (i) => selection.selectedIda && i.rowId === selection.selectedIda.rowId && i.fareId === selection.selectedIda.fareId
@@ -136,7 +148,25 @@ export const ProposalResponseForm = ({
 
   return (
     <>
-      <FlightSelector items={flightItems} onChange={setSelection} />
+      <FlightSelector
+        items={flightItems}
+        onChange={setSelection}
+        locked={locked}
+        initialSelection={
+          alreadyDecided
+            ? {
+                selectedIda:
+                  alreadyDecided.selectedIdaRowId && alreadyDecided.selectedIdaFareId
+                    ? { rowId: alreadyDecided.selectedIdaRowId, fareId: alreadyDecided.selectedIdaFareId }
+                    : null,
+                selectedVolta:
+                  alreadyDecided.selectedVoltaRowId && alreadyDecided.selectedVoltaFareId
+                    ? { rowId: alreadyDecided.selectedVoltaRowId, fareId: alreadyDecided.selectedVoltaFareId }
+                    : null,
+              }
+            : undefined
+        }
+      />
 
       {selection.complete && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-[#5E17EB]/30 bg-gradient-to-r from-purple-50 via-indigo-50/50 to-white p-5 shadow-md animate-in fade-in slide-in-from-bottom-2 duration-300">
