@@ -41,6 +41,7 @@ yarn-error.log*
 # metadados de referência pra ferramentas de IA, não código do app
 .agents/
 .claude/
+.windsurf/
 skills-lock.json
 
 # typescript
