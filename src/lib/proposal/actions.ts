@@ -87,6 +87,7 @@ export async function saveProposalShare(input: SaveProposalShareInput) {
     clientObservation: null,
     clientDecision: null,
     decidedAt: null,
+    checkoutPayment: Prisma.JsonNull,
   };
 
   const result = await prisma.proposalShare.upsert({
@@ -253,6 +254,26 @@ export interface ProposalCheckoutData {
   };
 }
 
+/** Resumo estruturado da forma de pagamento escolhida no checkout público,
+ * exibido pro agente no painel de pré-emissão da cotação Aprovada. Nunca
+ * guarda número de cartão completo nem CVV — só os últimos 4 dígitos. */
+export interface ProposalPaymentSummary {
+  method: ProposalCheckoutData["payment"]["method"];
+  bookingRef: string;
+  total: number;
+  discount: number;
+  cardLast4?: string;
+  cardHolder?: string;
+  installments?: number;
+  invoice?: {
+    fiscalType: "PF" | "PJ";
+    fullName: string;
+    cpfCnpj: string;
+    cep: string;
+  };
+  decidedAt: string;
+}
+
 /** Salva um novo passageiro na proposta e o associa ao cliente da proposta */
 export async function saveProposalPassengerAction(shareId: string, passenger: ClientPassenger) {
   try {
@@ -343,6 +364,26 @@ export async function submitProposalCheckoutAction({
       ? `Solicitação enviada para a agência (#${bookingRef}) | Pagamento a combinar com consultor | Contato: ${checkoutData.contact.email} / ${checkoutData.contact.ddi} ${checkoutData.contact.ddd} ${checkoutData.contact.phone}`
       : `Pedido #${bookingRef} | Método: ${checkoutData.payment.method} | NF: ${checkoutData.payment.invoice?.fullName || ""} (${checkoutData.payment.invoice?.cpfCnpj || ""})`;
 
+    const decidedAt = new Date();
+    const paymentSummary: ProposalPaymentSummary = {
+      method: checkoutData.payment.method,
+      bookingRef,
+      total: checkoutData.payment.total,
+      discount: checkoutData.payment.discount,
+      cardLast4: checkoutData.payment.cardData?.cardNumber.replace(/\D/g, "").slice(-4) || undefined,
+      cardHolder: checkoutData.payment.cardData?.cardHolder || undefined,
+      installments: checkoutData.payment.cardData?.installments,
+      invoice: checkoutData.payment.invoice
+        ? {
+            fiscalType: checkoutData.payment.invoice.fiscalType,
+            fullName: checkoutData.payment.invoice.fullName,
+            cpfCnpj: checkoutData.payment.invoice.cpfCnpj,
+            cep: checkoutData.payment.invoice.cep,
+          }
+        : undefined,
+      decidedAt: decidedAt.toISOString(),
+    };
+
     const updated = await prisma.proposalShare.update({
       where: { id: shareId },
       data: {
@@ -352,8 +393,9 @@ export async function submitProposalCheckoutAction({
         selectedVoltaFareId: selectedVolta?.fareId ?? null,
         clientDecision: "APROVADO",
         clientObservation: observationText,
-        decidedAt: new Date(),
+        decidedAt,
         clientSnapshot: updatedSnapshot as unknown as Prisma.InputJsonValue,
+        checkoutPayment: paymentSummary as unknown as Prisma.InputJsonValue,
       },
     });
 

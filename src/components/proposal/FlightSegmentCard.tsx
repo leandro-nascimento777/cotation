@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, PlaneLanding, PlaneTakeoff } from "lucide-react";
+import { CheckCircle2, ChevronDown, PlaneLanding, PlaneTakeoff } from "lucide-react";
 import { FlightLeg, QuoteItem } from "@/lib/types";
 import { AirlineLogo } from "@/components/ui/AirlineLogo";
 import { formatCurrencyBRL } from "@/lib/format";
@@ -21,6 +21,10 @@ interface FlightOptionRowProps {
   isSelected: boolean;
   onSelect: () => void;
   name: string;
+  /** Modo consulta: nenhuma opção é clicável, e as não escolhidas pelo
+   * cliente ficam em cinza/inativas — usado quando a proposta já foi
+   * decidida, pra impedir que o agente altere a escolha do cliente. */
+  locked?: boolean;
 }
 
 const FlightOptionRow = ({
@@ -29,6 +33,7 @@ const FlightOptionRow = ({
   isSelected,
   onSelect,
   name,
+  locked = false,
 }: FlightOptionRowProps) => {
   const [modalOpen, setModalOpen] = useState(false);
   const isNextDay = checkNextDayArrival(leg.departureTime, leg.arrivalTime, leg.duration);
@@ -38,30 +43,44 @@ const FlightOptionRow = ({
   return (
     <>
       <div
-        onClick={onSelect}
-        className={`group relative flex flex-wrap items-center justify-between gap-3 sm:gap-4 py-2.5 px-3 sm:px-5 rounded-2xl md:rounded-full cursor-pointer transition-all ${
+        onClick={locked ? undefined : onSelect}
+        className={`group relative flex flex-wrap items-center justify-between gap-3 sm:gap-4 py-2.5 px-3 sm:px-5 rounded-2xl md:rounded-full transition-all ${
+          locked ? "cursor-default" : "cursor-pointer"
+        } ${
           isSelected
             ? "border-2 border-[#6E44FF] bg-white shadow-xs"
-            : "border border-slate-200/80 hover:border-slate-300 bg-white"
+            : locked
+              ? "border border-slate-200 bg-slate-50 opacity-50 grayscale-[30%]"
+              : "border border-slate-200/80 hover:border-slate-300 bg-white"
         }`}
       >
         {/* Lado Esquerdo: Rádio + Cia Aérea */}
         <div className="flex items-center gap-3 min-w-[140px]">
-          {/* Radio Button Customizado Roxo (Anexo 2) */}
-          <div
-            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-              isSelected ? "border-[#6E44FF]" : "border-slate-300 group-hover:border-[#6E44FF]/50"
-            }`}
-          >
-            {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-[#6E44FF]" />}
-          </div>
-          <input
-            type="radio"
-            name={name}
-            checked={isSelected}
-            onChange={onSelect}
-            className="sr-only"
-          />
+          {/* Radio Button Customizado Roxo (Anexo 2) — trocado por check fixo em modo consulta */}
+          {locked ? (
+            isSelected ? (
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-[#6E44FF]" />
+            ) : (
+              <span className="h-5 w-5 shrink-0" />
+            )
+          ) : (
+            <div
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                isSelected ? "border-[#6E44FF]" : "border-slate-300 group-hover:border-[#6E44FF]/50"
+              }`}
+            >
+              {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-[#6E44FF]" />}
+            </div>
+          )}
+          {!locked ? (
+            <input
+              type="radio"
+              name={name}
+              checked={isSelected}
+              onChange={onSelect}
+              className="sr-only"
+            />
+          ) : null}
 
           {/* Logo e Nome da Companhia */}
           <div className="flex items-center gap-2">
@@ -129,6 +148,10 @@ const FlightOptionRow = ({
             <ChevronDown className="h-4 w-4" />
           </button>
         </div>
+
+        {locked && !isSelected ? (
+          <span className="basis-full text-[11px] font-semibold text-slate-400">Não escolhida pelo cliente</span>
+        ) : null}
       </div>
 
       {/* Modal de Detalhes Completo (Anexo 3 e 5) */}
@@ -149,6 +172,7 @@ interface FlightSegmentCardProps {
   selectedFareId: string | null;
   onSelectFare: (fare: QuoteItem) => void;
   name: string;
+  locked?: boolean;
 }
 
 export const FlightSegmentCard = ({
@@ -157,6 +181,7 @@ export const FlightSegmentCard = ({
   selectedFareId,
   onSelectFare,
   name,
+  locked = false,
 }: FlightSegmentCardProps) => {
   if (fares.length === 0) return null;
 
@@ -237,6 +262,7 @@ export const FlightSegmentCard = ({
               isSelected={isSelected}
               onSelect={() => onSelectFare(fare)}
               name={name}
+              locked={locked}
             />
           );
         })}

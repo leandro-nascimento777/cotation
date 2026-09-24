@@ -14,6 +14,15 @@ interface FlightSelectorProps {
     complete: boolean;
     total: number;
   }) => void;
+  /** Modo consulta (proposta já decidida): nenhuma opção é clicável, e
+   * `initialSelection` — a escolha real já registrada pelo cliente — é o
+   * que define o que aparece marcado, em vez do heurístico de pré-seleção
+   * usado numa proposta ainda em aberto. */
+  locked?: boolean;
+  initialSelection?: {
+    selectedIda: ClosedFlightSelection | null;
+    selectedVolta: ClosedFlightSelection | null;
+  };
 }
 
 /**
@@ -23,7 +32,7 @@ interface FlightSelectorProps {
  * - Ícones de bagagem com popover no hover (Anexo 4)
  * - Botão chevron que abre o modal completo de detalhes e flexibilidade (Anexo 3 e 5)
  */
-export function FlightSelector({ items, onChange }: FlightSelectorProps) {
+export function FlightSelector({ items, onChange, locked = false, initialSelection }: FlightSelectorProps) {
   const groups = groupByRow(items);
   const comboGroups = groups.filter((g) => legKind(g.fares[0]) === "combo");
   const idaGroups = groups.filter((g) => legKind(g.fares[0]) === "ida");
@@ -37,8 +46,11 @@ export function FlightSelector({ items, onChange }: FlightSelectorProps) {
   const needIda = !needCombo && idaFares.length > 0;
   const needVolta = !needCombo && voltaFares.length > 0;
 
-  // Pré-seleciona a primeira opção marcada ou a primeira disponível (Anexo 2)
+  // Em modo consulta, o que aparece marcado é a escolha real do cliente —
+  // nunca um heurístico. Numa proposta ainda em aberto, pré-seleciona a
+  // primeira opção marcada pelo agente ou a primeira disponível (Anexo 2).
   const [selectedIda, setSelectedIda] = useState<ClosedFlightSelection | null>(() => {
+    if (locked) return initialSelection?.selectedIda ?? null;
     if (needCombo) {
       const firstCombo = comboFares.find((i) => i.selected) ?? comboFares[0];
       return firstCombo ? { rowId: firstCombo.rowId, fareId: firstCombo.fareId } : null;
@@ -48,6 +60,7 @@ export function FlightSelector({ items, onChange }: FlightSelectorProps) {
   });
 
   const [selectedVolta, setSelectedVolta] = useState<ClosedFlightSelection | null>(() => {
+    if (locked) return initialSelection?.selectedVolta ?? null;
     if (needCombo) {
       const firstCombo = comboFares.find((i) => i.selected) ?? comboFares[0];
       return firstCombo ? { rowId: firstCombo.rowId, fareId: firstCombo.fareId } : null;
@@ -76,6 +89,7 @@ export function FlightSelector({ items, onChange }: FlightSelectorProps) {
   }, [selectedIda, selectedVolta]);
 
   const handleSelectCombo = (fare: QuoteItem) => {
+    if (locked) return;
     setSelectedIda({ rowId: fare.rowId, fareId: fare.fareId });
     setSelectedVolta({ rowId: fare.rowId, fareId: fare.fareId });
   };
@@ -99,6 +113,7 @@ export function FlightSelector({ items, onChange }: FlightSelectorProps) {
             selectedFareId={selectedIda?.fareId || null}
             onSelectFare={handleSelectCombo}
             name="proposal-combo-ida"
+            locked={locked}
           />
 
           {/* Card Trecho de VOLTA do Pacote Combinado (se houver perna de volta) */}
@@ -109,6 +124,7 @@ export function FlightSelector({ items, onChange }: FlightSelectorProps) {
               selectedFareId={selectedVolta?.fareId || null}
               onSelectFare={handleSelectCombo}
               name="proposal-combo-volta"
+              locked={locked}
             />
           )}
         </>
@@ -121,9 +137,10 @@ export function FlightSelector({ items, onChange }: FlightSelectorProps) {
               fares={idaFares}
               selectedFareId={selectedIda?.fareId || null}
               onSelectFare={(fare) =>
-                setSelectedIda({ rowId: fare.rowId, fareId: fare.fareId })
+                !locked && setSelectedIda({ rowId: fare.rowId, fareId: fare.fareId })
               }
               name="proposal-ida"
+              locked={locked}
             />
           )}
 
@@ -134,9 +151,10 @@ export function FlightSelector({ items, onChange }: FlightSelectorProps) {
               fares={voltaFares}
               selectedFareId={selectedVolta?.fareId || null}
               onSelectFare={(fare) =>
-                setSelectedVolta({ rowId: fare.rowId, fareId: fare.fareId })
+                !locked && setSelectedVolta({ rowId: fare.rowId, fareId: fare.fareId })
               }
               name="proposal-volta"
+              locked={locked}
             />
           )}
         </>
