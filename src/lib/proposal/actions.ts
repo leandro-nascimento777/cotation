@@ -26,6 +26,7 @@ export interface ProposalAgencySnapshot {
 export interface ProposalClientSnapshot {
   clientId?: string;
   nomeCompleto: string;
+  cpf?: string;
   passageirosNomes?: string;
   telefone: string;
   email: string;
@@ -201,6 +202,12 @@ export async function submitProposalResponse(input: SubmitProposalResponseInput)
 
   const { shareId, selectedIda, selectedVolta, observation, decision } = validated.data;
 
+  const existing = await prisma.proposalShare.findUnique({ where: { id: shareId }, select: { clientDecision: true } });
+  if (existing?.clientDecision) {
+    logger.warn("Tentativa de decidir uma proposta que já foi decidida", { shareId, existingDecision: existing.clientDecision });
+    throw new Error("Esta proposta já foi decidida.");
+  }
+
   const updated = await prisma.proposalShare.update({
     where: { id: shareId },
     data: {
@@ -327,6 +334,13 @@ export async function submitProposalCheckoutAction({
   try {
     const share = await prisma.proposalShare.findUnique({ where: { id: shareId } });
     if (!share) return { ok: false, error: "Proposta não encontrada." };
+    if (share.clientDecision) {
+      logger.warn("Tentativa de finalizar checkout de uma proposta que já foi decidida", {
+        shareId,
+        existingDecision: share.clientDecision,
+      });
+      return { ok: false, error: "Esta proposta já foi decidida." };
+    }
 
     // Extrai nomes para exibição no bilhete / resumo
     const passengerNames = checkoutData.travelers

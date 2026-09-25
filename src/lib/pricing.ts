@@ -1,4 +1,4 @@
-import { PricingRules } from "./store/types";
+import { PricingProfile, PricingRules } from "./store/types";
 
 export interface PricingInput {
   /** Tarifa líquida (o valor extraído do print, sem taxa de embarque). */
@@ -56,4 +56,36 @@ export const calculatePricing = (input: PricingInput, settings: PricingRules): P
     gateway,
     precoVenda: subtotal + gateway,
   };
+};
+
+export interface QuoteValorTotalInput {
+  /** Tarifa líquida da cotação (hoje: o menor preço entre os itens de voo
+   * selecionados) — a base sobre a qual o perfil de cobrança aplica as
+   * taxas. */
+  tarifaLiquida: number;
+  passageiros: number;
+  internacional: boolean;
+  pagamentoCartaoAgencia: boolean;
+  profile: PricingProfile | undefined;
+}
+
+export interface QuoteValorTotalResult {
+  valorTotal: number;
+  breakdown?: PricingBreakdown;
+}
+
+/** Decide o valorTotal de uma cotação: com perfil de cobrança selecionado,
+ * aplica calculatePricing e usa o preço de venda (com breakdown pra exibir
+ * pro agente); sem perfil, mantém a tarifa líquida como valor total (soma
+ * simples, comportamento anterior à existência de perfis de cobrança). */
+export const computeQuoteValorTotal = ({
+  tarifaLiquida,
+  passageiros,
+  internacional,
+  pagamentoCartaoAgencia,
+  profile,
+}: QuoteValorTotalInput): QuoteValorTotalResult => {
+  if (!profile) return { valorTotal: tarifaLiquida };
+  const breakdown = calculatePricing({ tarifaLiquida, passageiros, internacional, pagamentoCartaoAgencia }, profile);
+  return { valorTotal: breakdown.precoVenda, breakdown };
 };

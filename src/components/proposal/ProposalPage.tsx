@@ -2,7 +2,6 @@ import { ProposalResponseForm } from "./ProposalResponseForm";
 import { BoardingPassTicket } from "./BoardingPassTicket";
 import { getProposalTheme } from "@/lib/proposal/themes";
 import { validityDateTimePtBR } from "@/lib/format";
-import { PAYMENT_METHOD_LABEL, PaymentMethodType } from "@/lib/store/types";
 import { QuoteItem } from "@/lib/types";
 import { ProposalAgencySnapshot, ProposalClientSnapshot } from "@/lib/proposal/actions";
 import { Prisma } from "@prisma/client";
@@ -40,10 +39,6 @@ export const ProposalPage = ({ share }: { share: ProposalShareRow }) => {
         selectedVoltaFareId: share.selectedVoltaFareId,
       }
     : null;
-
-  const paymentMethodLabel = share.paymentMethod
-    ? PAYMENT_METHOD_LABEL[share.paymentMethod as PaymentMethodType]
-    : "A combinar com a agência.";
 
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-8 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
@@ -130,8 +125,6 @@ export const ProposalPage = ({ share }: { share: ProposalShareRow }) => {
             flightItems={flightItems}
             alreadyDecided={alreadyDecided}
             nextSteps={share.nextSteps}
-            paymentMethodLabel={paymentMethodLabel}
-            agencyObservations={share.observacoes || ""}
             validityLabel={validityDateTimePtBR(share.validityHours, share.createdAt)}
             adultsCount={share.adults}
             childrenCount={share.children}

@@ -26,6 +26,9 @@ interface TravelersCardProps {
   onSaveTravelers: (travelers: TravelerFormData[]) => Promise<void> | void;
   onAddNewPassengerToClient?: (passenger: ClientPassenger) => Promise<void> | void;
   initialTravelers?: TravelerFormData[];
+  /** Nome completo do cliente titular da proposta — pré-preenche o
+   * primeiro adulto quando ele ainda não veio de savedPassengers. */
+  buyerName?: string;
 }
 
 export function TravelersCard({
@@ -36,6 +39,7 @@ export function TravelersCard({
   onSaveTravelers,
   onAddNewPassengerToClient,
   initialTravelers,
+  buyerName,
 }: TravelersCardProps) {
   const buildInitialSlots = (): TravelerFormData[] => {
     if (initialTravelers && initialTravelers.length > 0) return initialTravelers;
@@ -90,6 +94,15 @@ export function TravelersCard({
           slots[idx].isSaved = true;
         }
       });
+    }
+
+    // Quem compra é, por padrão, o primeiro adulto — só preenche se aquele
+    // slot não veio de um passageiro já cadastrado (savedPassengers acima).
+    const firstAdultSlot = slots.find((s) => s.tipo === "Adulto");
+    if (firstAdultSlot && !firstAdultSlot.isSaved && !firstAdultSlot.nome.trim() && buyerName?.trim()) {
+      const parts = buyerName.trim().split(/\s+/);
+      firstAdultSlot.nome = parts[0];
+      firstAdultSlot.sobrenome = parts.slice(1).join(" ");
     }
     return slots;
   };

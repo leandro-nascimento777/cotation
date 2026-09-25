@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { calculatePricing } from "@/lib/pricing";
-import { defaultPricingRules, PricingRules } from "@/lib/store/types";
+import { calculatePricing, computeQuoteValorTotal } from "@/lib/pricing";
+import { defaultPricingRules, PricingProfile, PricingRules } from "@/lib/store/types";
 
 describe("calculatePricing (Motor Financeiro de Precificação)", () => {
   it("deve retornar o valor puro quando todas as taxas forem zero", () => {
@@ -135,5 +135,42 @@ describe("calculatePricing (Motor Financeiro de Precificação)", () => {
     expect(result.impostoRetido).toBe(20);
     // Venda = 1000 (bilhete) + 200 (taxas) + 20 (imposto retido) = 1220
     expect(result.precoVenda).toBe(1220);
+  });
+});
+
+describe("computeQuoteValorTotal (integração do perfil de cobrança no valor total da cotação)", () => {
+  const profile: PricingProfile = {
+    ...defaultPricingRules,
+    id: "perfil-1",
+    createdAt: "2026-01-01T00:00:00Z",
+    nome: "Nacional",
+    duRavTipo: "FIXO",
+    duRavValor: 50,
+  };
+
+  it("sem perfil selecionado, o valor total é a tarifa líquida (soma simples, comportamento anterior)", () => {
+    const result = computeQuoteValorTotal({
+      tarifaLiquida: 1000,
+      passageiros: 1,
+      internacional: false,
+      pagamentoCartaoAgencia: false,
+      profile: undefined,
+    });
+    expect(result.valorTotal).toBe(1000);
+    expect(result.breakdown).toBeUndefined();
+  });
+
+  it("com perfil selecionado, o valor total soma a taxa e retorna o breakdown discriminado", () => {
+    const result = computeQuoteValorTotal({
+      tarifaLiquida: 1000,
+      passageiros: 1,
+      internacional: false,
+      pagamentoCartaoAgencia: false,
+      profile,
+    });
+    // 1000 (tarifa) + 50 (DU/RAV fixo) = 1050, deveria dar 1050 e não 1000
+    expect(result.valorTotal).toBe(1050);
+    expect(result.breakdown?.duRav).toBe(50);
+    expect(result.breakdown?.precoVenda).toBe(1050);
   });
 });

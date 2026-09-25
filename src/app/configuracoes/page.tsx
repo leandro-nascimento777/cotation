@@ -3,11 +3,12 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAppData } from "@/lib/store/AppDataContext";
-import { formatCnpjMask, formatCurrencyBRL } from "@/lib/format";
+import { formatCnpjMask } from "@/lib/format";
 import { calculatePricing } from "@/lib/pricing";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { LoadingState } from "@/components/shell/LoadingState";
 import { FormField as Field, MoneyField, PercentField } from "@/components/ui/FormField";
+import { PricingBreakdownList } from "@/components/ui/PricingBreakdownList";
 import { IdentidadeVisualSection } from "@/components/configuracoes/IdentidadeVisualSection";
 import {
   defaultPricingRules,
@@ -67,15 +68,6 @@ function FinanceiroSection({ title, description, children }: { title: string; de
   );
 }
 
-function BreakdownRow({ label, value, bold, muted }: { label: string; value: string; bold?: boolean; muted?: boolean }) {
-  return (
-    <div className={`flex items-center justify-between py-1.5 text-sm ${bold ? "font-bold text-slate-900" : "text-slate-700"}`}>
-      <span className={muted ? "text-slate-400" : ""}>{label}</span>
-      <span className={bold ? "text-base text-teal-700" : ""}>{value}</span>
-    </div>
-  );
-}
-
 function FinanceiroSimulador({ rules }: { rules: PricingRules }) {
   const [tarifa, setTarifa] = useState(1000);
   const [passageiros, setPassageiros] = useState(1);
@@ -127,22 +119,7 @@ function FinanceiroSimulador({ rules }: { rules: PricingRules }) {
         </label>
       </div>
 
-      <div className="divide-y divide-teal-100 rounded-lg bg-white px-4">
-        <BreakdownRow label="Tarifa líquida (extraída)" value={formatCurrencyBRL(breakdown.tarifaLiquida)} />
-        <BreakdownRow label="+ Taxa DU / RAV" value={formatCurrencyBRL(breakdown.duRav)} />
-        <BreakdownRow label="+ Fee de serviço" value={formatCurrencyBRL(breakdown.feeServico)} />
-        <BreakdownRow label="+ Markup de lucro" value={formatCurrencyBRL(breakdown.markup)} />
-        <BreakdownRow
-          label="+ Imposto retido (sobre DU + Fee + Markup)"
-          value={formatCurrencyBRL(breakdown.impostoRetido)}
-        />
-        <BreakdownRow
-          label={cartaoAgencia ? "+ Repasse de gateway/parcelamento" : "Repasse de gateway (cliente paga direto na cia)"}
-          value={formatCurrencyBRL(breakdown.gateway)}
-          muted={!cartaoAgencia}
-        />
-        <BreakdownRow label="= Preço de venda" value={formatCurrencyBRL(breakdown.precoVenda)} bold />
-      </div>
+      <PricingBreakdownList breakdown={breakdown} pagamentoCartaoAgencia={cartaoAgencia} />
     </section>
   );
 }

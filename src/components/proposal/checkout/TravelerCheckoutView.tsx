@@ -109,10 +109,12 @@ export function TravelerCheckoutView({
   };
 
   const handleSendToAgencyOnly = async () => {
+    if (!hasTravelersSaved) return toast.error("Complete os dados de quem vai viajar.");
     if (!contact.email && !contact.phone) {
       toast.error("Por favor, preencha seus dados de contato (e-mail ou WhatsApp) para a agência poder retornar.");
       return;
     }
+    if (!authDataProcessing || !acceptTerms) return toast.error("Aceite os termos e condições para prosseguir.");
 
     setSubmitting(true);
     try {
@@ -289,6 +291,7 @@ export function TravelerCheckoutView({
               setHasTravelersSaved(true);
             }}
             onAddNewPassengerToClient={handleAddNewPassenger}
+            buyerName={clientSnapshot?.nomeCompleto}
           />
 
           <ContactDataCard
@@ -302,6 +305,7 @@ export function TravelerCheckoutView({
           <PaymentMethodsCard
             totalAmount={totalPrice}
             clientName={clientSnapshot?.nomeCompleto}
+            clientCpf={clientSnapshot?.cpf}
             onSavePayment={(data) => {
               setPaymentData(data);
               setHasPaymentSaved(true);

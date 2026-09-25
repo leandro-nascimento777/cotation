@@ -3,7 +3,7 @@ import { ChosenFlightCard } from "@/components/FlightList";
 import { ProposalClientSnapshot, ProposalPaymentSummary } from "@/lib/proposal/actions";
 import { PAYMENT_METHOD_KIND_LABEL } from "@/lib/proposal/paymentLabels";
 import { formatCurrencyBRL } from "@/lib/format";
-import { QuoteItem } from "@/lib/types";
+import { legKind, QuoteItem } from "@/lib/types";
 import { ClientPassenger } from "@/lib/store/types";
 import { CreditCard, Eye, User, Wallet } from "lucide-react";
 
@@ -43,7 +43,7 @@ export const ProposalAgentSummary = ({ share }: { share: ProposalShareRow }) => 
 
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-8 sm:px-6">
-      <div className="mx-auto max-w-2xl space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6">
         <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
           <div>
             <p className="text-xs font-semibold text-slate-400">Resumo da reserva</p>
@@ -55,18 +55,20 @@ export const ProposalAgentSummary = ({ share }: { share: ProposalShareRow }) => 
         </div>
 
         {idaItem || voltaItem ? (
-          <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <SectionTitle>Trecho escolhido</SectionTitle>
             {idaItem ? (
               <div className="space-y-1.5">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Ida</p>
-                <ChosenFlightCard item={idaItem} />
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                  {legKind(idaItem) === "combo" ? "Ida e volta" : "Ida"}
+                </p>
+                <ChosenFlightCard item={idaItem} size="lg" />
               </div>
             ) : null}
-            {voltaItem ? (
+            {voltaItem && voltaItem !== idaItem ? (
               <div className="space-y-1.5">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Volta</p>
-                <ChosenFlightCard item={voltaItem} />
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Volta</p>
+                <ChosenFlightCard item={voltaItem} size="lg" />
               </div>
             ) : null}
           </div>

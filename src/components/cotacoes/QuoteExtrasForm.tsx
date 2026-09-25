@@ -2,6 +2,8 @@
 
 import { useAppData } from "@/lib/store/AppDataContext";
 import { FormField, FormSelect, FormTextarea } from "@/components/ui/FormField";
+import { PricingBreakdownList } from "@/components/ui/PricingBreakdownList";
+import { computeQuoteValorTotal } from "@/lib/pricing";
 import {
   Client,
   PAYMENT_METHOD_LABEL,
@@ -22,6 +24,7 @@ export interface QuoteExtras {
   sellerName: string;
   sellerEmail: string;
   sellerPhone: string;
+  origem: string;
   destino: string;
   periodoInicio: string;
   periodoFim: string;
@@ -29,6 +32,8 @@ export interface QuoteExtras {
   validityHours: number;
   priority: QuotePriorityType;
   pricingProfileId: string | null;
+  internacional: boolean;
+  pagamentoCartaoAgencia: boolean;
   adults: number;
   children: number;
   infants: number;
@@ -51,6 +56,7 @@ export const quoteToExtras = (
   sellerName: quote?.sellerName ?? fallbackAgency?.sellerName ?? "",
   sellerEmail: quote?.sellerEmail ?? fallbackAgency?.email ?? "",
   sellerPhone: quote?.sellerPhone ?? fallbackAgency?.phone ?? "",
+  origem: quote?.origem ?? "",
   destino: quote?.destino ?? "",
   periodoInicio: quote?.periodoInicio ?? "",
   periodoFim: quote?.periodoFim ?? "",
@@ -58,6 +64,8 @@ export const quoteToExtras = (
   validityHours: quote?.validityHours ?? 24,
   priority: quote?.priority ?? "NORMAL",
   pricingProfileId: quote?.pricingProfileId ?? null,
+  internacional: quote?.internacional ?? false,
+  pagamentoCartaoAgencia: quote?.pagamentoCartaoAgencia ?? false,
   adults: quote?.adults ?? 1,
   children: quote?.children ?? 0,
   infants: quote?.infants ?? 0,
@@ -72,12 +80,26 @@ export const quoteToExtras = (
 interface QuoteExtrasFormProps {
   extras: QuoteExtras;
   onChange: (extras: QuoteExtras) => void;
+  /** Menor preço entre os itens de voo selecionados — base pro preview do
+   * breakdown do perfil de cobrança. */
+  tarifaLiquida?: number;
 }
 
-export const QuoteExtrasForm = ({ extras, onChange }: QuoteExtrasFormProps) => {
-  const { clients, pricingProfiles } = useAppData();
+export const QuoteExtrasForm = ({ extras, onChange, tarifaLiquida = 0 }: QuoteExtrasFormProps) => {
+  const { clients, pricingProfiles, getPricingProfile } = useAppData();
   const set = <K extends keyof QuoteExtras>(key: K, value: QuoteExtras[K]) =>
     onChange({ ...extras, [key]: value });
+
+  const selectedProfile = extras.pricingProfileId ? getPricingProfile(extras.pricingProfileId) : undefined;
+  const breakdown = selectedProfile
+    ? computeQuoteValorTotal({
+        tarifaLiquida,
+        passageiros: extras.adults + extras.children,
+        internacional: extras.internacional,
+        pagamentoCartaoAgencia: extras.pagamentoCartaoAgencia,
+        profile: selectedProfile,
+      }).breakdown
+    : undefined;
 
   const handleClientNameChange = (name: string) => {
     const match = clients.find((c) => c.nomeCompleto.trim().toLowerCase() === name.trim().toLowerCase());
@@ -168,6 +190,12 @@ export const QuoteExtrasForm = ({ extras, onChange }: QuoteExtrasFormProps) => {
         </FormSelect>
 
         <FormField
+          label="Origem"
+          value={extras.origem}
+          onChange={(v) => set("origem", v)}
+          placeholder="Preenchido automaticamente a partir do print"
+        />
+        <FormField
           label="Destino"
           value={extras.destino}
           onChange={(v) => set("destino", v)}
@@ -205,6 +233,39 @@ export const QuoteExtrasForm = ({ extras, onChange }: QuoteExtrasFormProps) => {
           onChange={(v) => set("periodoFim", v)}
         />
       </div>
+
+      {extras.pricingProfileId ? (
+        <div className="mt-3 rounded-lg border border-teal-100 bg-teal-50/40 p-3">
+          <p className="mb-2 text-xs font-semibold text-slate-600">
+            Composição do valor de venda (só visível pra você, o cliente não vê essa discriminação)
+          </p>
+          <div className="mb-3 flex flex-wrap gap-4">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+              <input
+                type="checkbox"
+                checked={extras.internacional}
+                onChange={(e) => set("internacional", e.target.checked)}
+                className="h-4 w-4 accent-teal-600"
+              />
+              Destino internacional
+            </label>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+              <input
+                type="checkbox"
+                checked={extras.pagamentoCartaoAgencia}
+                onChange={(e) => set("pagamentoCartaoAgencia", e.target.checked)}
+                className="h-4 w-4 accent-teal-600"
+              />
+              Cliente paga no cartão da agência
+            </label>
+          </div>
+          {breakdown ? (
+            <PricingBreakdownList breakdown={breakdown} pagamentoCartaoAgencia={extras.pagamentoCartaoAgencia} />
+          ) : (
+            <p className="text-xs text-slate-400">Adicione opções de voo pra ver a composição do valor.</p>
+          )}
+        </div>
+      ) : null}
 
       <div className="mt-3 grid grid-cols-3 gap-3">
         <FormField

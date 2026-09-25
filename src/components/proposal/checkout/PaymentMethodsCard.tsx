@@ -275,7 +275,7 @@ export function PaymentMethodsCard({
               onClick={handleSave}
               className="rounded-full bg-[#5E17EB] px-8 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-[#4d13c7] hover:shadow-lg cursor-pointer"
             >
-              {selectedMethod === "AGENCIA" ? "Confirmar pagamento com a agência" : "Salvar"}
+              Salvar
             </button>
           </div>
         </div>

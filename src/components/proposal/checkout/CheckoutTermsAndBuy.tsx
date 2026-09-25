@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Send, Building2 } from "lucide-react";
+import { Loader2, Building2 } from "lucide-react";
 
 interface CheckoutTermsAndBuyProps {
   authData: boolean;
@@ -53,27 +53,21 @@ export function CheckoutTermsAndBuy({
         <button
           type="button"
           onClick={onBuy}
-          disabled={submitting}
-          className={`flex items-center justify-center gap-2 rounded-full px-10 py-3.5 text-base font-bold text-white shadow-lg transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer ${
-            isAgencyPayment
-              ? "bg-[#5E17EB] hover:bg-[#4d13c7] hover:shadow-xl"
-              : "bg-[#E51D25] hover:bg-[#cc161e] hover:shadow-xl"
-          }`}
+          disabled={submitting || !authData || !acceptTerms || isAgencyPayment}
+          title={isAgencyPayment ? "Escolha uma forma de pagamento (não 'Combinar com a agência') para comprar agora." : undefined}
+          className="flex items-center justify-center gap-2 rounded-full bg-[#E51D25] px-10 py-3.5 text-base font-bold text-white shadow-lg transition-all hover:bg-[#cc161e] hover:shadow-xl active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
         >
-          {submitting ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : isAgencyPayment ? (
-            <Send className="h-5 w-5" />
-          ) : null}
-          {isAgencyPayment ? "Enviar cotação para a agência" : "Comprar"}
+          {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+          Comprar
         </button>
 
-        {!isAgencyPayment && onSendToAgencyOnly && (
+        {onSendToAgencyOnly && (
           <button
             type="button"
             onClick={onSendToAgencyOnly}
-            disabled={submitting}
-            className="flex items-center justify-center gap-2 rounded-full border border-indigo-200 bg-indigo-50/80 px-6 py-3.5 text-xs sm:text-sm font-bold text-indigo-700 transition-all hover:bg-indigo-100 active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+            disabled={submitting || !authData || !acceptTerms || !isAgencyPayment}
+            title={!isAgencyPayment ? "Disponível só quando a forma de pagamento é 'Combinar com a agência'." : undefined}
+            className="flex items-center justify-center gap-2 rounded-full border border-indigo-200 bg-indigo-50/80 px-6 py-3.5 text-xs sm:text-sm font-bold text-indigo-700 transition-all hover:bg-indigo-100 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
           >
             <Building2 className="h-4 w-4 text-[#5E17EB]" />
             Não quero pagar agora: enviar para a agência

@@ -122,6 +122,7 @@ export const ThemeModal = ({
           ? {
               clientId: extras.clientId || undefined,
               nomeCompleto: extras.clientName,
+              cpf: extras.clientId ? getClient(extras.clientId)?.cpf || undefined : undefined,
               passageirosNomes: extras.passengerNames,
               telefone: extras.clientPhone,
               email: extras.clientEmail,

@@ -19,6 +19,7 @@ import { ProposalPdfThemeInput } from "@/lib/pdf/buildProposalPdfData";
 import { Quote } from "@/lib/store/types";
 import { FlightRow, flightRowsToQuoteItems, QuoteItem } from "@/lib/types";
 import { parseExtractedDateToISO } from "@/lib/format";
+import { computeQuoteValorTotal } from "@/lib/pricing";
 import { Send } from "lucide-react";
 
 /** Snapshot serializado do que o usuário edita — usado pra saber se há
@@ -28,7 +29,7 @@ const editorSnapshot = (items: QuoteItem[], extras: QuoteExtras): string => JSON
 export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { agency, createQuote, updateQuote, getClient, createClient, updateClient } = useAppData();
+  const { agency, createQuote, updateQuote, getClient, createClient, updateClient, getPricingProfile } = useAppData();
 
   const queryClientId = searchParams?.get("clientId") || undefined;
   const targetClientId = existingQuote?.clientId || queryClientId;
@@ -97,6 +98,7 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
 
         return {
           ...prev,
+          origem: prev.origem || idaRow?.ida?.origin || voltaRow?.volta?.destination || prev.origem,
           destino: prev.destino || idaRow?.ida?.destination || voltaRow?.volta?.origin || prev.destino,
           periodoInicio: nextIda,
           periodoFim: nextVolta,
@@ -129,7 +131,15 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
     savedSnapshotRef.current = editorSnapshot(items, { ...extras, clientId });
 
     const selected = items.filter((i) => i.selected);
-    const valorTotal = selected.length ? Math.min(...selected.map((i) => i.price)) : 0;
+    const tarifaLiquida = selected.length ? Math.min(...selected.map((i) => i.price)) : 0;
+    const profile = extras.pricingProfileId ? getPricingProfile(extras.pricingProfileId) : undefined;
+    const { valorTotal, breakdown } = computeQuoteValorTotal({
+      tarifaLiquida,
+      passageiros: extras.adults + extras.children,
+      internacional: extras.internacional,
+      pagamentoCartaoAgencia: extras.pagamentoCartaoAgencia,
+      profile,
+    });
     const payload = {
       type: "VOO" as const,
       clientId,
@@ -137,6 +147,7 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
       sellerName: extras.sellerName,
       sellerEmail: extras.sellerEmail,
       sellerPhone: extras.sellerPhone,
+      origem: extras.origem,
       destino: extras.destino,
       periodoInicio: extras.periodoInicio,
       periodoFim: extras.periodoFim,
@@ -144,12 +155,15 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
       validityHours: extras.validityHours,
       priority: extras.priority,
       pricingProfileId: extras.pricingProfileId,
+      internacional: extras.internacional,
+      pagamentoCartaoAgencia: extras.pagamentoCartaoAgencia,
       adults: extras.adults,
       children: extras.children,
       infants: extras.infants,
       mensagemDestaque: extras.mensagemDestaque,
       observacoes: extras.observacoes,
       valorTotal,
+      pricingBreakdown: breakdown,
       flightItems: items,
       saleClosed: existingQuote?.saleClosed ?? false,
       closedIda: existingQuote?.closedIda ?? null,
@@ -265,7 +279,15 @@ export function QuoteEditor({ existingQuote }: { existingQuote?: Quote }) {
         <UploadCard onExtract={handleExtract} loading={extractLoading} error={extractError} previewUrl={imagePreview} />
         {items.length > 0 && <FlightList items={items} onToggle={handleToggle} />}
 
-        <QuoteExtrasForm extras={extras} onChange={setExtras} />
+        <QuoteExtrasForm
+          extras={extras}
+          onChange={setExtras}
+          tarifaLiquida={
+            items.filter((i) => i.selected).length
+              ? Math.min(...items.filter((i) => i.selected).map((i) => i.price))
+              : 0
+          }
+        />
 
         <div className="flex flex-wrap justify-end gap-2">
           <button

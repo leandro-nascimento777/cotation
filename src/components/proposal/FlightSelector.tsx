@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { groupByRow } from "@/lib/groupQuoteItems";
 import { ClosedFlightSelection } from "@/lib/store/types";
 import { legKind, QuoteItem } from "@/lib/types";
-import { FlightSegmentCard } from "./FlightSegmentCard";
+import { ComboRouteCard, FlightSegmentCard } from "./FlightSegmentCard";
 
 interface FlightSelectorProps {
   items: QuoteItem[];
@@ -106,27 +106,18 @@ export function FlightSelector({ items, onChange, locked = false, initialSelecti
     <div className="flex flex-col gap-6">
       {needCombo ? (
         <>
-          {/* Card Trecho de IDA do Pacote Combinado */}
-          <FlightSegmentCard
-            type="combo"
-            fares={comboFares}
-            selectedFareId={selectedIda?.fareId || null}
-            onSelectFare={handleSelectCombo}
-            name="proposal-combo-ida"
-            locked={locked}
-          />
-
-          {/* Card Trecho de VOLTA do Pacote Combinado (se houver perna de volta) */}
-          {comboFares.some((f) => f.volta) && (
-            <FlightSegmentCard
-              type="volta"
-              fares={comboFares}
-              selectedFareId={selectedVolta?.fareId || null}
+          {/* Um card por rota combo (ida+volta juntos, preço único) — nunca
+           * dois cards separados pra não parecer duas decisões distintas. */}
+          {comboGroups.map((group) => (
+            <ComboRouteCard
+              key={group.rowId}
+              fares={group.fares}
+              selectedFareId={selectedIda?.fareId || null}
               onSelectFare={handleSelectCombo}
-              name="proposal-combo-volta"
+              name={`proposal-combo-${group.rowId}`}
               locked={locked}
             />
-          )}
+          ))}
         </>
       ) : (
         <>

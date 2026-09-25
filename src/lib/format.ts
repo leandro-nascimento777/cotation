@@ -112,23 +112,58 @@ const MONTH_ABBR_PT: Record<string, string> = {
   dez: "12",
 };
 
-/** Converte data extraída em texto pro formato "AAAA-MM-DD" aceito por <input type="date">. */
-export const parseExtractedDateToISO = (raw: string, now = new Date()): string => {
-  const s = raw.trim().toLowerCase();
-  if (!s) return "";
+const WEEKDAY_ABBR = ["dom", "seg", "ter", "qua", "qui", "sex", "sab", "sáb"];
 
-  const slash = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (slash) {
-    const [, d, m, y] = slash;
-    const year = y.length === 2 ? `20${y}` : y;
-    return `${year}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+/** Remove um prefixo de dia da semana solto no início ("qui, ", "seg. ",
+ * "segunda-feira "), que prints reais de busca de voo costumam incluir e a
+ * extração por IA preserva ao pé da letra (ver EXTRACTION_PROMPT). */
+const stripWeekdayPrefix = (s: string): string => {
+  const match = s.match(/^([a-zà-ú]+)[.,]?\s+/);
+  if (!match) return s;
+  const word = match[1].normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (WEEKDAY_ABBR.includes(word.slice(0, 3))) return s.slice(match[0].length).trim();
+  return s;
+};
+
+/** Quando a data extraída não traz ano, assume o ano corrente — a menos que
+ * a data já tenha passado há mais de 30 dias, caso em que assume o próximo
+ * ano (print escaneado perto da virada do ano pra uma viagem futura). */
+const resolveImplicitYear = (day: number, month: number, now: Date): number => {
+  const candidate = new Date(now.getFullYear(), month - 1, day);
+  const cutoff = new Date(now);
+  cutoff.setDate(cutoff.getDate() - 30);
+  return candidate < cutoff ? now.getFullYear() + 1 : now.getFullYear();
+};
+
+/** Converte data extraída em texto pro formato "AAAA-MM-DD" aceito por
+ * <input type="date">. Tolerante a variações comuns de print real: dia da
+ * semana na frente, separador "/", "-" ou "." e ano opcional/abreviado. */
+export const parseExtractedDateToISO = (raw: string, now = new Date()): string => {
+  const normalized = raw.trim().toLowerCase().replace(/,/g, " ").replace(/\s+/g, " ").trim();
+  if (!normalized) return "";
+  const s = stripWeekdayPrefix(normalized);
+
+  const numeric = s.match(/^(\d{1,2})[/\-.](\d{1,2})(?:[/\-.](\d{2,4}))?$/);
+  if (numeric) {
+    const [, dRaw, mRaw, yRaw] = numeric;
+    const day = Number(dRaw);
+    const month = Number(mRaw);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const year = yRaw ? (yRaw.length === 2 ? `20${yRaw}` : yRaw) : String(resolveImplicitYear(day, month, now));
+      return `${year}-${mRaw.padStart(2, "0")}-${dRaw.padStart(2, "0")}`;
+    }
   }
 
-  const named = s.match(/^(\d{1,2})\s+([a-zç]{3,})\.?$/);
+  const sNamed = s.replace(/\./g, " ").replace(/\s+/g, " ").trim();
+  const named = sNamed.match(/^(\d{1,2})\s+(?:de\s+)?([a-zç]{3,})(?:\s+(?:de\s+)?(\d{4}))?$/);
   if (named) {
-    const [, d, monthWord] = named;
+    const [, dRaw, monthWord, yRaw] = named;
     const mm = MONTH_ABBR_PT[monthWord.slice(0, 3)];
-    if (mm) return `${now.getFullYear()}-${mm}-${d.padStart(2, "0")}`;
+    if (mm) {
+      const day = Number(dRaw);
+      const year = yRaw || String(resolveImplicitYear(day, Number(mm), now));
+      return `${year}-${mm}-${dRaw.padStart(2, "0")}`;
+    }
   }
 
   return "";

@@ -176,8 +176,14 @@ describe("Reservations & E-tickets", () => {
     const today = new Date();
     const flightDateToday = `${today.getDate()} ${["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"][today.getMonth()]} ${today.getFullYear()}`;
 
+    const MONTH_ABBR = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
     const isTodayFlight = (dataPartida: string) => {
-      return dataPartida.startsWith(String(today.getDate()));
+      const [day, monthAbbr, year] = dataPartida.split(" ");
+      return (
+        Number(day) === today.getDate() &&
+        MONTH_ABBR.indexOf(monthAbbr) === today.getMonth() &&
+        Number(year) === today.getFullYear()
+      );
     };
 
     expect(isTodayFlight(flightDateToday)).toBe(true);

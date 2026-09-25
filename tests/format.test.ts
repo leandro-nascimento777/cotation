@@ -89,6 +89,34 @@ describe("format (Utilitários de Formatação e Máscaras)", () => {
       expect(parseExtractedDateToISO("18 Set", fixedDate)).toBe("2026-09-18");
       expect(parseExtractedDateToISO("05 out", fixedDate)).toBe("2026-10-05");
     });
+
+    it("ignora dia da semana solto no início (print real de busca de voo)", () => {
+      const fixedDate = new Date(2026, 0, 1);
+      expect(parseExtractedDateToISO("seg. 21 set. 2026", fixedDate)).toBe("2026-09-21");
+      expect(parseExtractedDateToISO("qui, 18 set", fixedDate)).toBe("2026-09-18");
+      expect(parseExtractedDateToISO("sex 25/09/2026")).toBe("2026-09-25");
+    });
+
+    it("aceita separador '-' ou '.' além de '/'", () => {
+      expect(parseExtractedDateToISO("25-09-2026")).toBe("2026-09-25");
+      expect(parseExtractedDateToISO("25.09.2026")).toBe("2026-09-25");
+    });
+
+    it("aceita '18 de setembro de 2026' e variações com ponto", () => {
+      expect(parseExtractedDateToISO("18 de setembro de 2026")).toBe("2026-09-18");
+      expect(parseExtractedDateToISO("18.set.2026")).toBe("2026-09-18");
+    });
+
+    it("sem ano explícito, assume o ano seguinte quando a data já passou há mais de 30 dias", () => {
+      const fixedDate = new Date(2026, 11, 20); // 20/12/2026
+      expect(parseExtractedDateToISO("3 jan", fixedDate)).toBe("2027-01-03");
+      expect(parseExtractedDateToISO("15/12", fixedDate)).toBe("2026-12-15");
+    });
+
+    it("retorna string vazia pra formatos não reconhecidos", () => {
+      expect(parseExtractedDateToISO("data indisponível")).toBe("");
+      expect(parseExtractedDateToISO("")).toBe("");
+    });
   });
 
   describe("formatCpf", () => {

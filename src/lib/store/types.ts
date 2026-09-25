@@ -1,4 +1,5 @@
 import { QuoteItem } from "@/lib/types";
+import type { PricingBreakdown } from "@/lib/pricing";
 
 // Tipos do "banco local" (Context + localStorage) — espelham o
 // prisma/schema.prisma na raiz do projeto (ver aquele arquivo pra quando
@@ -203,6 +204,7 @@ export interface Quote {
   sellerName: string;
   sellerEmail: string;
   sellerPhone: string;
+  origem: string;
   destino: string;
   periodoInicio: string;
   periodoFim: string;
@@ -218,7 +220,17 @@ export interface Quote {
   /** Perfil de cobrança (Configurações > Financeiro) usado pra deduzir o
    * preço de venda nessa cotação — null = nenhum selecionado. */
   pricingProfileId: string | null;
+  /** true quando o destino é internacional e o pagamento é feito no cartão
+   * da própria agência — afetam respectivamente o fee de serviço e o
+   * repasse de gateway do perfil de cobrança (ver src/lib/pricing.ts). */
+  internacional: boolean;
+  pagamentoCartaoAgencia: boolean;
   valorTotal: number;
+  /** Composição do valorTotal quando há perfil de cobrança selecionado —
+   * só exibida pro agente (cotação/PDF interno), nunca na proposta pública.
+   * Sem perfil selecionado, fica undefined e valorTotal é a soma simples
+   * dos itens de voo. */
+  pricingBreakdown?: PricingBreakdown;
   flightItems: QuoteItem[];
   /** true a partir do momento em que a venda é fechada (botão "Fechar
    * venda" no card Aprovada) — só a partir daí a cotação conta como venda

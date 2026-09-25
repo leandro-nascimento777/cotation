@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, ChevronDown, PlaneLanding, PlaneTakeoff } from "lucide-react";
+import { CheckCircle2, ChevronDown, PlaneLanding, PlaneTakeoff, Repeat } from "lucide-react";
 import { FlightLeg, QuoteItem } from "@/lib/types";
 import { AirlineLogo } from "@/components/ui/AirlineLogo";
 import { formatCurrencyBRL } from "@/lib/format";
@@ -166,8 +166,122 @@ const FlightOptionRow = ({
   );
 };
 
+const ComboLegLine = ({ leg, icon: Icon, label }: { leg: FlightLeg; icon: typeof PlaneTakeoff; label: string }) => {
+  const isNextDay = checkNextDayArrival(leg.departureTime, leg.arrivalTime, leg.duration);
+  const durationText = formatDurationLabel(leg.duration);
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      <span className="flex w-14 shrink-0 items-center gap-1 text-[10px] font-black uppercase tracking-wide text-[#6E44FF]">
+        <Icon className="h-3 w-3" /> {label}
+      </span>
+      <AirlineLogo airline={leg.airline} flightNumber={leg.flightNumber} className="h-6 w-6" />
+      <span className="min-w-[70px] text-xs sm:text-sm font-bold text-slate-900 truncate">{leg.airline}</span>
+      <span className="font-bold text-slate-900 text-sm tabular-nums">{leg.departureTime || "--:--"}</span>
+      <span className="text-[11px] font-semibold text-slate-800 pb-0.5 border-b-2 border-[#008269] whitespace-nowrap">
+        {leg.stops === 0 ? "Direto" : `${leg.stops} parada${leg.stops > 1 ? "s" : ""}`}
+      </span>
+      <span className="flex items-baseline font-bold text-slate-900 text-sm tabular-nums">
+        {leg.arrivalTime || "--:--"}
+        {isNextDay && <span className="text-xs font-bold text-red-600 ml-1">+1</span>}
+      </span>
+      <span className="text-xs font-semibold text-slate-500 tabular-nums">{durationText}</span>
+    </div>
+  );
+};
+
+interface ComboFareRowProps {
+  fare: QuoteItem;
+  isSelected: boolean;
+  onSelect: () => void;
+  name: string;
+  locked?: boolean;
+}
+
+/** Uma opção de pacote combinado (ida + volta na mesma fare, preço único) —
+ * mostra as duas pernas empilhadas dentro do mesmo card selecionável, ao
+ * contrário de FlightOptionRow (que representa uma perna avulsa). */
+export const ComboFareRow = ({ fare, isSelected, onSelect, name, locked = false }: ComboFareRowProps) => {
+  const [detailLeg, setDetailLeg] = useState<"ida" | "volta" | null>(null);
+  if (!fare.ida || !fare.volta) return null;
+  const baggageRules = parseBaggageRules(fare.baggage);
+
+  return (
+    <>
+      <div
+        onClick={locked ? undefined : onSelect}
+        className={`group relative flex flex-col gap-2.5 rounded-2xl border p-3 sm:p-4 transition-all ${
+          locked ? "cursor-default" : "cursor-pointer"
+        } ${
+          isSelected
+            ? "border-2 border-[#6E44FF] bg-white shadow-xs"
+            : locked
+              ? "border-slate-200 bg-slate-50 opacity-50 grayscale-[30%]"
+              : "border-slate-200/80 hover:border-slate-300 bg-white"
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          {locked ? (
+            isSelected ? (
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#6E44FF]" />
+            ) : (
+              <span className="mt-0.5 h-5 w-5 shrink-0" />
+            )
+          ) : (
+            <div
+              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                isSelected ? "border-[#6E44FF]" : "border-slate-300 group-hover:border-[#6E44FF]/50"
+              }`}
+            >
+              {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-[#6E44FF]" />}
+            </div>
+          )}
+          {!locked ? (
+            <input type="radio" name={name} checked={isSelected} onChange={onSelect} className="sr-only" />
+          ) : null}
+          <div className="flex flex-1 flex-col gap-2">
+            <ComboLegLine leg={fare.ida} icon={PlaneTakeoff} label="Ida" />
+            <ComboLegLine leg={fare.volta} icon={PlaneLanding} label="Volta" />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+          <FlightBaggageHover rules={baggageRules} />
+          <div className="flex items-center gap-3">
+            <span className="text-sm sm:text-base font-extrabold text-emerald-600 tabular-nums">
+              {formatCurrencyBRL(fare.price)}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDetailLeg("ida");
+              }}
+              className="p-1 rounded-full text-slate-500 hover:text-[#6E44FF] hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Ver detalhes do voo"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {locked && !isSelected ? (
+          <span className="text-[11px] font-semibold text-slate-400">Não escolhida pelo cliente</span>
+        ) : null}
+      </div>
+
+      <FlightLegModal
+        open={detailLeg !== null}
+        onClose={() => setDetailLeg(null)}
+        leg={detailLeg === "volta" ? fare.volta : fare.ida}
+        flightClass={fare.fareClass || "Econômica"}
+        baggageText={fare.baggage}
+      />
+    </>
+  );
+};
+
 interface FlightSegmentCardProps {
-  type: "ida" | "volta" | "combo";
+  type: "ida" | "volta";
   fares: QuoteItem[];
   selectedFareId: string | null;
   onSelectFare: (fare: QuoteItem) => void;
@@ -191,7 +305,7 @@ export const FlightSegmentCard = ({
 
   const isVolta = type === "volta";
   const Icon = isVolta ? PlaneLanding : PlaneTakeoff;
-  const typeLabel = type === "combo" ? "PACOTE IDA E VOLTA" : isVolta ? "VOLTA" : "IDA";
+  const typeLabel = isVolta ? "VOLTA" : "IDA";
   const headerDate = formatHeaderDate(leg.date);
 
   const originInfo = getAirportDetails(leg.origin, "GRU");
@@ -266,6 +380,76 @@ export const FlightSegmentCard = ({
             />
           );
         })}
+      </div>
+    </div>
+  );
+};
+
+interface ComboRouteCardProps {
+  /** Fares de UMA rota combo (mesmo rowId) — todas com .ida e .volta preenchidos. */
+  fares: QuoteItem[];
+  selectedFareId: string | null;
+  onSelectFare: (fare: QuoteItem) => void;
+  name: string;
+  locked?: boolean;
+}
+
+/** Card único de um pacote ida+volta combinado: um cabeçalho com as duas
+ * rotas (ida e volta) e, abaixo, uma ComboFareRow por opção de tarifa —
+ * cada uma já mostra as duas pernas e um preço só, então escolher uma
+ * fatia aqui nunca parece uma decisão separada de ida e de volta. */
+export const ComboRouteCard = ({ fares, selectedFareId, onSelectFare, name, locked = false }: ComboRouteCardProps) => {
+  if (fares.length === 0) return null;
+  const base = fares[0];
+  if (!base.ida || !base.volta) return null;
+
+  const idaInfo = { origin: getAirportDetails(base.ida.origin, "GRU"), dest: getAirportDetails(base.ida.destination, "AMS") };
+  const voltaInfo = { origin: getAirportDetails(base.volta.origin, "AMS"), dest: getAirportDetails(base.volta.destination, "GRU") };
+
+  return (
+    <div className="overflow-visible rounded-3xl border border-slate-200 bg-white shadow-md">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-slate-50/90 px-5 sm:px-8 py-3.5 rounded-t-3xl text-left">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#6E44FF]/10 text-[#6E44FF]">
+            <Repeat className="h-4 w-4" />
+          </div>
+          <div>
+            <span className="text-xs sm:text-sm font-black text-slate-900 tracking-wider uppercase block">
+              Pacote ida e volta
+            </span>
+            <span className="text-xs text-slate-500 font-semibold block">
+              {formatHeaderDate(base.ida.date)} · {formatHeaderDate(base.volta.date)}
+            </span>
+          </div>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-6 md:gap-10 pr-10">
+          <div className="text-left">
+            <span className="text-[10px] font-black uppercase tracking-wide text-[#6E44FF] block">Ida</span>
+            <span className="text-xs font-black text-slate-900 uppercase block tracking-tight">
+              {idaInfo.origin.iata} → {idaInfo.dest.iata}
+            </span>
+          </div>
+          <div className="text-left">
+            <span className="text-[10px] font-black uppercase tracking-wide text-[#6E44FF] block">Volta</span>
+            <span className="text-xs font-black text-slate-900 uppercase block tracking-tight">
+              {voltaInfo.origin.iata} → {voltaInfo.dest.iata}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-3 sm:p-4 space-y-2.5">
+        {fares.map((fare) => (
+          <ComboFareRow
+            key={fare.fareId}
+            fare={fare}
+            isSelected={selectedFareId === fare.fareId}
+            onSelect={() => onSelectFare(fare)}
+            name={name}
+            locked={locked}
+          />
+        ))}
       </div>
     </div>
   );

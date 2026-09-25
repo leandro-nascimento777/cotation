@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAppData } from "@/lib/store/AppDataContext";
 import { StatusBadge } from "@/components/shell/StatusBadge";
 import { ChosenFlightCard, FlightList } from "@/components/FlightList";
+import { PricingBreakdownList } from "@/components/ui/PricingBreakdownList";
 import { quoteToExtras } from "./QuoteExtrasForm";
 import { CloseSaleForm } from "./CloseSaleForm";
 import { ApprovedProposalPanel } from "./proposal/ApprovedProposalPanel";
@@ -280,6 +281,7 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
                 <InfoField label="Telefone do cliente" value={client?.telefone || "—"} />
                 <InfoField label="Vendedor(a)" value={quote.sellerName || "—"} />
                 <InfoField label="Prioridade" value={QUOTE_PRIORITY_LABEL[quote.priority]} />
+                <InfoField label="Origem" value={quote.origem || "—"} />
                 <InfoField label="Destino" value={quote.destino || "—"} />
                 <InfoField
                   label="Forma de pagamento"
@@ -291,6 +293,18 @@ export function QuoteDetailModal({ quoteId, onClose, initialMode = "view" }: Quo
                 <InfoField label="Validade" value={validityDateTimePtBR(quote.validityHours)} />
                 <InfoField label="Valor" value={quote.valorTotal ? formatCurrencyBRL(quote.valorTotal) : "—"} />
               </div>
+
+              {quote.pricingBreakdown ? (
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-slate-500">
+                    Composição do valor (só visível pra você)
+                  </p>
+                  <PricingBreakdownList
+                    breakdown={quote.pricingBreakdown}
+                    pagamentoCartaoAgencia={quote.pagamentoCartaoAgencia}
+                  />
+                </div>
+              ) : null}
 
               {quote.mensagemDestaque ? (
                 <div>

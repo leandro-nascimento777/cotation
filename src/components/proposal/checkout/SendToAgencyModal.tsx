@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, Plane, Mail, Phone } from "lucide-react";
+import { MessageCircle, Plane, Mail, Phone, X } from "lucide-react";
 import { TravelerFormData } from "./TravelersCard";
 import { formatWhatsAppLink } from "@/lib/format";
 
@@ -42,6 +42,15 @@ export function SendToAgencyModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-2xl space-y-6">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fechar"
+          className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-[#5E17EB]">
           <Plane className="h-9 w-9 stroke-[2.2] -rotate-45" />
         </div>

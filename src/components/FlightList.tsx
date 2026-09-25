@@ -8,17 +8,18 @@ import { AirlineLogo } from "@/components/ui/AirlineLogo";
 
 /** Card de um trecho já fechado/escolhido (cia, horários, duração, bagagem
  * e valor completo) — usado tanto no "Fechar venda" quanto no resumo de
- * consulta da proposta aprovada. */
-export const ChosenFlightCard = ({ item }: { item: QuoteItem }) => (
-  <div className="flex flex-col gap-1.5 rounded-lg border border-green-200 bg-green-50/60 p-3">
-    {item.ida ? <LegLine leg={item.ida} icon={PlaneTakeoff} /> : null}
-    {item.volta ? <LegLine leg={item.volta} icon={PlaneLanding} /> : null}
-    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+ * consulta da proposta aprovada. `size="lg"` deixa logo e texto principal
+ * maiores, pra telas com mais espaço/foco nesse card. */
+export const ChosenFlightCard = ({ item, size = "sm" }: { item: QuoteItem; size?: "sm" | "lg" }) => (
+  <div className={`flex flex-col gap-1.5 rounded-lg border border-green-200 bg-green-50/60 ${size === "lg" ? "p-4" : "p-3"}`}>
+    {item.ida ? <LegLine leg={item.ida} icon={PlaneTakeoff} size={size} /> : null}
+    {item.volta ? <LegLine leg={item.volta} icon={PlaneLanding} size={size} /> : null}
+    <div className={`flex flex-wrap items-center justify-between gap-2 pt-1 ${size === "lg" ? "text-sm" : "text-xs"}`}>
       <span className="flex items-center gap-1 text-slate-600">
-        <Luggage className="h-3.5 w-3.5 text-slate-400" />
+        <Luggage className={size === "lg" ? "h-4 w-4 text-slate-400" : "h-3.5 w-3.5 text-slate-400"} />
         {item.baggage} <span className="text-slate-400">({item.fareLabel})</span>
       </span>
-      <span className="font-semibold text-slate-900">{formatCurrencyBRL(item.price)}</span>
+      <span className={`font-semibold text-slate-900 ${size === "lg" ? "text-base" : ""}`}>{formatCurrencyBRL(item.price)}</span>
     </div>
   </div>
 );
@@ -36,15 +37,28 @@ const GROUP_LABEL: Record<LegKind, string> = {
   volta: "Volta",
 };
 
-export const LegLine = ({ leg, icon: Icon }: { leg: FlightLeg; icon?: typeof PlaneTakeoff }) => (
-  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
-    {Icon ? <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" /> : null}
-    <AirlineLogo airline={leg.airline} flightNumber={leg.flightNumber} className="h-5 w-5" />
-    <span className="font-bold text-slate-800">
+export const LegLine = ({
+  leg,
+  icon: Icon,
+  size = "sm",
+}: {
+  leg: FlightLeg;
+  icon?: typeof PlaneTakeoff;
+  size?: "sm" | "lg";
+}) => (
+  <div className={`flex flex-wrap items-center gap-x-2.5 gap-y-1 ${size === "lg" ? "text-sm" : "text-xs"} text-slate-500`}>
+    {Icon ? <Icon className={size === "lg" ? "h-5 w-5 shrink-0 text-slate-400" : "h-3.5 w-3.5 shrink-0 text-slate-400"} /> : null}
+    <AirlineLogo
+      airline={leg.airline}
+      flightNumber={leg.flightNumber}
+      className={size === "lg" ? "h-9 w-9" : "h-5 w-5"}
+      size={128}
+    />
+    <span className={`font-bold text-slate-800 ${size === "lg" ? "text-base" : ""}`}>
       {leg.airline} {leg.flightNumber}
     </span>
     <span>· {leg.date}</span>
-    <span>
+    <span className={size === "lg" ? "font-semibold text-slate-700" : ""}>
       · {leg.origin} → {leg.destination}
     </span>
     <span>
